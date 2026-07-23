@@ -1,0 +1,34 @@
+---
+// Methodology / footer — verbatim from 07 §7. Every caveat the data demands, once.
+import { META } from '../lib/data';
+const yr = META.year_pair.replace('-', '–');
+---
+
+<footer class="methodology" role="contentinfo">
+  <h2>About this map</h2>
+  <p>
+    Source: IRS Statistics of Income, county-to-county migration, tax years {yr} — the latest the IRS has
+    published. Figures are baked once at build from the public IRS files; nothing updates live.
+  </p>
+  <p>
+    A “mover” is an individual (IRS field N2) on a tax return filed from a different county than the year before.
+    People who don’t file a return — many with very low or no income — aren’t counted. Only domestic moves are shown;
+    moves to or from abroad are left out.
+  </p>
+  <p>
+    “What movers earn” is the average adjusted gross income (AGI) of the returns behind each flow, for the destination
+    year. AGI can include losses, so it may run lower than take-home pay.
+  </p>
+  <p>
+    Metros are Core-Based Statistical Areas under the Census delineation of July 2023. We show 31: the 30 largest by
+    population, plus Louisville — a hometown addition.
+  </p>
+  <p>
+    The IRS suppresses any county-to-county flow under 20 returns to protect privacy. Those small flows are folded into
+    “Rest of U.S.” and kept as a separate, labelled component — never mixed into a metro’s partner numbers.
+  </p>
+  <p>
+    Built by <a href="https://dustincoledata.com">dustincoledata</a> · data &amp; method:
+    <a href={META.irs_source}>irs.gov/statistics/soi-tax-stats-migration-data</a>
+  </p>
+</footer>

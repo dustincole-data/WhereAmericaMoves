@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.astro/
+.vercel/
+
+# Data: gitignored + CI-generated (Namesake pattern)
+data/raw/
+src/data/
+public/data/
+public/og/
+
+# Local build references — never ship
+.scratch/
+
+# Local Claude settings
+.claude/settings.local.json
+
+# OS / tooling byproducts
+.DS_Store
+*.log

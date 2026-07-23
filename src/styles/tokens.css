@@ -1,0 +1,128 @@
+/* Where America Moves — "Warm Atlas" (Light) design tokens.
+   Locked in ticket 02 (.scratch/.../look-tokens.md). Establishes the look;
+   the hero geometry (04) is built inside it. Do not drift these values. */
+
+:root {
+  /* ── Ground / surfaces (warm, light) ── */
+  --ground: #f5efe4; /* warm atlas paper + faint SVG grain (~5% mono, multiply) */
+  --surface: #fbf7ef;
+  --rule: #e3d8c7; /* hairline */
+
+  /* ── Ink ── */
+  --ink: #2a2521; /* warm graphite */
+  --ink-2: #5e5445;
+  --muted: #978d7c;
+
+  /* ── Net-flow encoding — CVD-validated, reserved for data only.
+        cool = arriving / net-in · warm = leaving / net-out ── */
+  --in-core: #1a6e9e;
+  --in-lo: #20507f; /* spectral-within-pole (low magnitude) */
+  --in-hi: #2e93b4; /* spectral-within-pole (high magnitude) */
+  --out-core: #bc4e37;
+  --out-lo: #a8442e;
+  --out-hi: #d3823c;
+  --net-mid: #eae2d4; /* neutral midpoint */
+
+  /* ── Type ── */
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
+  --font-hand: 'Caveat', 'Source Serif 4', cursive;
+
+  /* ── Spacing / rhythm ── */
+  --gutter: clamp(16px, 4vw, 40px);
+  --rail-w: 372px;
+  --radius: 10px;
+  --shadow-card: 0 1px 2px rgba(42, 37, 33, 0.04), 0 6px 20px rgba(42, 37, 33, 0.05);
+
+  /* ── Motion — near-zero budget ── */
+  --isolate-ms: 120ms;
+}
+
+/* ── Self-hosted fonts (woff2; no font CDN) ── */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/source-serif-4.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/source-serif-4-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/source-sans-3.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/caveat.woff2') format('woff2');
+}
+
+/* ── Base reset / page ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--ground);
+  /* faint warm-atlas grain: ~5% mono fractal noise, multiplied over the paper */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-blend-mode: multiply;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular figures everywhere numbers live */
+.tnum,
+.figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus-visible ring (a11y, 05) */
+:where(a, button, [tabindex], select, [role='button']):focus-visible {
+  outline: 2px solid var(--in-core);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Reduced motion: kill all transitions (near-zero baseline regardless) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}

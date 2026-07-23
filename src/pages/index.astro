@@ -1,0 +1,81 @@
+---
+// The explorer — Warm Atlas frame + 31-arc directed chord (client island) + choropleth
+// selector + rail panel. Composition/interaction/mobile/a11y = ticket 05; copy = ticket 07.
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Legend from '../components/Legend.astro';
+import Footer from '../components/Footer.astro';
+import { VIEWS } from '../lib/data';
+import {
+  nationalPanelHTML,
+  HERO_ARIA,
+  HERO_HINT_NATIONAL,
+  MAP_ARIA,
+  MAP_HINT,
+  SELECT_LABEL,
+  HOME_TITLE,
+  HOME_DESC,
+  OG_HOME_TITLE,
+  OG_HOME_DESC,
+} from '../lib/copy';
+
+const site = Astro.site!;
+const canonical = new URL('/', site).href;
+const ogImage = new URL('/og/index.png', site).href;
+---
+
+<Layout
+  title={HOME_TITLE}
+  description={HOME_DESC}
+  ogTitle={OG_HOME_TITLE}
+  ogDesc={OG_HOME_DESC}
+  ogImage={ogImage}
+  canonical={canonical}
+>
+  <div class="wrap">
+    <Header />
+
+    <div class="stage">
+      <!-- HERO: dense 31-arc chord (desktop) / focus chord (mobile) -->
+      <div class="card chordcard">
+        <div class="chordhead">
+          <div class="scope" id="scope">All 31 metros</div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+        <svg id="hero" viewBox="0 0 600 560" role="img" aria-label={HERO_ARIA}></svg>
+        <div class="hint" id="herohint">{HERO_HINT_NATIONAL}</div>
+      </div>
+
+      <!-- RAIL: map selector -->
+      <div class="card mapcard">
+        <div class="maptop">
+          <div class="panel-title" style="margin:0">The map · click a metro</div>
+          <div class="selectwrap">
+            <label class="vh" for="metroPick">{SELECT_LABEL}</label>
+            <select id="metroPick">
+              <option value="">National view</option>
+              {VIEWS.map((v) => <option value={v.i}>{v.name}, {v.st}</option>)}
+            </select>
+          </div>
+        </div>
+        <svg id="map" viewBox="0 0 640 400" role="img" aria-label={MAP_ARIA}></svg>
+        <div class="hint">{MAP_HINT}</div>
+      </div>
+
+      <!-- RAIL: panel (national summary at rest; swaps to metro readout on select) -->
+      <div class="card panel" id="panel" set:html={nationalPanelHTML()}></div>
+
+      <!-- RAIL: legend-as-art -->
+      <Legend />
+    </div>
+
+    <Footer />
+  </div>
+
+  <div class="vh" id="live" aria-live="polite"></div>
+  <div class="tip" id="tip"></div>
+
+  <script>
+    import '../lib/explorer.ts';
+  </script>
+</Layout>

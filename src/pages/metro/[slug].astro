@@ -1,0 +1,106 @@
+---
+// Per-metro share page (08 §8) — the metro pre-selected, standalone. Hero = focus
+// chord (ticket 04 A); readout/rest/income server-rendered (no client fetch);
+// same Stefaner header + methodology footer. getStaticPaths over the 31.
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Legend from '../../components/Legend.astro';
+import Footer from '../../components/Footer.astro';
+import { VIEWS } from '../../lib/data';
+import type { MetroView } from '../../lib/data';
+import {
+  metroPanelCoreHTML,
+  pageMetroTitle,
+  ogMetroTitle,
+  metroDesc,
+  HERO_HINT_SELECTED_MOBILE,
+} from '../../lib/copy';
+import { verdictShort } from '../../lib/format';
+
+export function getStaticPaths() {
+  return VIEWS.map((v) => ({ params: { slug: v.slug }, props: { m: v } }));
+}
+
+const { m } = Astro.props as { m: MetroView };
+const v = m.net >= 0 ? 'pos' : 'neg';
+const site = Astro.site!;
+const canonical = new URL(`/metro/${m.slug}`, site).href;
+const ogImage = new URL(`/og/${m.slug}.png`, site).href;
+const heroAria = `${m.name} focus chord — its top partner metros, sized by people exchanged and coloured by net direction with that partner.`;
+const topPartners = m.partners.slice(0, 6);
+---
+
+<Layout
+  title={pageMetroTitle(m)}
+  description={metroDesc(m)}
+  ogTitle={ogMetroTitle(m)}
+  ogDesc={metroDesc(m)}
+  ogImage={ogImage}
+  canonical={canonical}
+>
+  <div class="wrap">
+    <Header />
+
+    <div class="share-links">
+      <a class="all" href="/">See all 31 metros →</a>
+      <span class="hint" style="margin:0"
+        >{m.name} {m.st} · <span class={'verdict ' + v} style="font-style:italic">{verdictShort(m.net)}</span></span
+      >
+    </div>
+
+    <div class="sharegrid">
+      <div class="card chordcard">
+        <div class="chordhead">
+          <div class="scope">{m.name} <span class="st">{m.st}</span></div>
+        </div>
+        <svg id="hero" data-slug={m.slug} viewBox="0 0 520 500" role="img" aria-label={heroAria}></svg>
+        <div class="hint">{HERO_HINT_SELECTED_MOBILE}</div>
+      </div>
+
+      <div class="card panel">
+        <div class="panelhead">
+          <div class="metroname">{m.name} <span class="st">{m.st}</span></div>
+        </div>
+        <Fragment set:html={metroPanelCoreHTML(m)} />
+        {
+          topPartners.length > 0 && (
+            <div class="partners-line">
+              <span>Trades most with: </span>
+              {topPartners.map((p, i) => (
+                <span>{i > 0 ? ' · ' : ''}<a href={`/metro/${p.slug}`}>{p.name}</a></span>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    </div>
+
+    <Legend />
+    <Footer />
+  </div>
+
+  <script>
+    import '../../lib/share.ts';
+  </script>
+</Layout>
+
+<style>
+  .sharegrid {
+    display: grid;
+    gap: 22px 26px;
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) var(--rail-w);
+    margin-bottom: 22px;
+  }
+  .legendcard {
+    max-width: var(--rail-w);
+  }
+  @media (max-width: 780px) {
+    .sharegrid {
+      grid-template-columns: 1fr;
+    }
+    .legendcard {
+      max-width: none;
+    }
+  }
+</style>
