@@ -41,9 +41,17 @@ let denseHandles: DenseHandles | null = null;
 const isMobile = () => matchMedia('(max-width:640px)').matches;
 
 // ── tooltip ──
+// A touch has no hover to leave, so a tapped tip pins itself and carries explicit
+// dismissals: the ×, or a pointerdown anywhere off it (tap-away, or the start of a
+// scroll). Re-tapping the same mark dismisses too — that pointerdown hides it and no
+// fresh mouseenter follows on a mark the cursor is already over. Mouse hover is
+// untouched: it never pins, so mouseleave still does the work.
+let coarse = false;
+
 const tip: Tip = {
   show(e, html) {
-    tipEl.innerHTML = html;
+    tipEl.innerHTML = coarse ? html + '<button class="tipx" type="button" aria-label="Dismiss">×</button>' : html;
+    tipEl.classList.toggle('pinned', coarse);
     tipEl.style.opacity = '1';
     this.move(e);
   },
@@ -59,9 +67,20 @@ const tip: Tip = {
     tipEl.style.top = y + 'px';
   },
   hide() {
+    tipEl.classList.remove('pinned');
     tipEl.style.opacity = '0';
   },
 };
+
+addEventListener(
+  'pointerdown',
+  (e) => {
+    coarse = e.pointerType !== 'mouse';
+    if (tipEl.classList.contains('pinned') && !tipEl.contains(e.target as Node)) tip.hide();
+  },
+  true
+);
+tipEl.addEventListener('click', () => tip.hide());
 
 // ── hero ──
 function heroMessage(text: string) {
@@ -180,7 +199,10 @@ pick.addEventListener('change', function () {
 addEventListener('keydown', (e) => {
   const tag = (document.activeElement?.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-  if (e.key === 'Escape' && selected !== null) deselect();
+  if (e.key === 'Escape') {
+    tip.hide();
+    if (selected !== null) deselect();
+  }
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     e.preventDefault();
     const dir = e.key === 'ArrowRight' ? 1 : -1;

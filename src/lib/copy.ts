@@ -2,7 +2,17 @@
 // panel HTML builders shared between SSR share pages and the client island so the
 // copy lives in exactly one place. {tokens} bind to the 06 contract (07 §9).
 
-import { fmtInt, fmtSigned, fmtAgi, gainLose, verdictArticle, approxTotal, agiAxis } from './format';
+import {
+  fmtInt,
+  fmtSigned,
+  fmtAgi,
+  gainLose,
+  verdictArticle,
+  approxTotal,
+  agiAxis,
+  spreadHandles,
+  CAP_MERGE_GAP,
+} from './format';
 import type { MetroView } from './data';
 import { META, N_DEST, N_DEPART, N_EVEN, TOP_GAIN, TOP_LOSS, VIEWS } from './data';
 
@@ -99,17 +109,27 @@ function incomeHTML(m: MetroView): string {
   }
   const { min, max } = agiAxis(m.agi_in, m.agi_out);
   const sx = (x: number) => ((x - min) / (max - min || 1)) * 100;
-  const cap = (cls: string, v: number, label: string) =>
-    `<div class="end ${cls}" style="left:${sx(v)}%"></div><div class="cap ${cls}" style="left:${sx(
-      v
-    )}%">${label} ${fmtAgi(v)}</div>`;
+  const xIn = sx(m.agi_in),
+    xOut = sx(m.agi_out);
+  // Close incomes land both handles — and both captions — on the same spot. Hold the
+  // handles a readable distance apart, and once the captions would overprint, replace
+  // them with one merged readout.
+  const [pIn, pOut] = spreadHandles(xIn, xOut);
+  const merged = Math.abs(xIn - xOut) < CAP_MERGE_GAP;
+  const cap = (cls: string, v: number, label: string, p: number) =>
+    `<div class="end ${cls}" style="left:${p}%"></div>` +
+    (merged ? '' : `<div class="cap ${cls}" style="left:${p}%">${label} ${fmtAgi(v)}</div>`);
+  const mergedCap = `<div class="cap both"><span class="in">in ${fmtAgi(m.agi_in)}</span> · <span class="out">out ${fmtAgi(
+    m.agi_out
+  )}</span></div>`;
   return `
   <div class="income">
     <div class="hd"><span class="t">What movers earn · avg AGI</span><span class="note">income rides the readout, not the mark</span></div>
     <div class="db">
       <div class="track"></div>
-      ${cap('in', m.agi_in, 'in')}
-      ${cap('out', m.agi_out, 'out')}
+      ${merged ? mergedCap : ''}
+      ${cap('in', m.agi_in, 'in', pIn)}
+      ${cap('out', m.agi_out, 'out', pOut)}
       <div class="axmin">${fmtAgi(min)}</div>
       <div class="axmax">${fmtAgi(max)}</div>
     </div>
