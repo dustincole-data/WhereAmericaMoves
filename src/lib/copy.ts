@@ -70,7 +70,7 @@ export function nationalPanelHTML(): string {
   return `
   <div class="panelhead"><div class="panel-title" style="margin:0">The national picture · at rest</div></div>
   <div class="nat">
-    <p class="lead">Of the <b>${N}</b> largest U.S. metros, <b class="pos">${N_DEST}</b> are net destinations and <b class="neg">${N_DEPART}</b> are net departures${evenClause}. They trade about <b>${approxTotal(
+    <p class="lead">Of the <b>${N}</b> largest U.S. metros, <b class="pos">${N_DEST}</b> are net destinations and <b class="neg">${N_DEPART}</b> are net departures${evenClause}. They trade <b>${approxTotal(
       META.inter_metro_total
     )}</b> people with one another in a year — every ribbon in the ring.</p>
     <div class="ext">
