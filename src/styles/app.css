@@ -469,6 +469,13 @@ svg {
   border-radius: 6px;
   flex: 0 0 auto;
 }
+/* the gradient swatches are inline SVG, which the global `svg{width:100%}` rule
+   would otherwise stretch across the row — pinning them to the bar width keeps all
+   three labels on one left edge */
+.legendcard .row svg {
+  width: 112px;
+  flex: 0 0 auto;
+}
 .legendcard .row .lg {
   font-size: 12px;
   color: var(--ink-2);
