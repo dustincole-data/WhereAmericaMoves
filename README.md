@@ -1,12 +1,12 @@
 # Where America Moves
 
-A free, static explorer of U.S. internal migration: click one of the **31 largest metros** and see who moves in, who moves out, the net flow, and what those movers earn — a dense directed **chord** hero with a choropleth selector, in a light "Warm Atlas" look.
+A free, static explorer of U.S. internal migration: click one of the **30 largest metros** and see who moves in, who moves out, the net flow, and what those movers earn — a dense directed **chord** hero with a choropleth selector, in a light "Warm Atlas" look.
 
 **Live:** [moves.dustincoledata.com](https://moves.dustincoledata.com) · part of [dustincoledata.com](https://dustincoledata.com)
 
 ## What it is
 
-- **Data:** IRS Statistics of Income (SOI) county-to-county migration, tax years **2022–2023** (the latest published). Rolled up to 31 metros via the Census July-2023 CBSA delineation.
+- **Data:** IRS Statistics of Income (SOI) county-to-county migration, tax years **2022–2023** (the latest published). Rolled up to 30 metros via the Census July-2023 CBSA delineation.
 - **100% static.** The data is **downloaded once at build, aggregated, and baked into ~1k rows of JSON** — no database, no serverless, no cron, no runtime fetch. Vercel serves files only.
 - **Free / low-upkeep.** The only maintenance is re-running the build when a newer IRS vintage publishes.
 
@@ -41,5 +41,5 @@ The county→CBSA crosswalk (`scripts/crosswalk.json`) and the metro list (`scri
 
 ## What's checked in vs generated
 
-- **Checked in:** app source, styles, self-hosted fonts, the curated `scripts/metros.ts` (the 31) and `scripts/crosswalk.json` (geographic lookup), the specs in `.claude/plans/`.
+- **Checked in:** app source, styles, self-hosted fonts, the curated `scripts/metros.ts` (the 30) and `scripts/crosswalk.json` (geographic lookup), the specs in `.claude/plans/`.
 - **Gitignored + CI-generated:** the IRS download (`data/raw/`), all aggregated JSON (`src/data/`, `public/data/`), and the OG card PNGs (`public/og/`).

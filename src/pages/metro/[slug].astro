@@ -1,7 +1,7 @@
 ---
 // Per-metro share page (08 §8) — the metro pre-selected, standalone. Hero = focus
 // chord (ticket 04 A); readout/rest/income server-rendered (no client fetch);
-// same Stefaner header + methodology footer. getStaticPaths over the 31.
+// same Stefaner header + methodology footer. getStaticPaths over the 30.
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Legend from '../../components/Legend.astro';
@@ -42,7 +42,7 @@ const topPartners = m.partners.slice(0, 6);
     <Header />
 
     <div class="share-links">
-      <a class="all" href="/">See all 31 metros →</a>
+      <a class="all" href="/">See all 30 metros →</a>
       <span class="hint" style="margin:0"
         >{m.name} {m.st} · <span class={'verdict ' + v} style="font-style:italic">{verdictShort(m.net)}</span></span
       >

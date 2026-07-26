@@ -1,5 +1,5 @@
 // gen-crosswalk.ts — regenerate scripts/crosswalk.json (county FIPS → CBSA),
-// restricted to the counties of the curated 31 metros (scripts/metros.ts).
+// restricted to the counties of the curated 30 metros (scripts/metros.ts).
 //
 // MANUAL, ~every several years — only when OMB re-delineates CBSAs. The output
 // (crosswalk.json) is CHECKED IN, so this never runs in CI. It needs one dev

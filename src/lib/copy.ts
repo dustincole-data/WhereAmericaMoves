@@ -25,13 +25,13 @@ export const HEADLINE = 'America keeps moving south and west.';
 export const DEK_SENTENCE1 =
   'Every year the IRS quietly records where households filed their taxes from — and where they filed the year before.';
 export const DEK =
-  'Every year the IRS quietly records where households filed their taxes from — and where they filed the year before. The ring below is the <em>30 largest</em> U.S. metros, plus <em>Louisville</em>, trading people all at once; click any metro, on the ring or the map, to see who it trades with, whether it&rsquo;s <em>gaining or losing</em>, and what those movers earn.';
+  'Every year the IRS quietly records where households filed their taxes from — and where they filed the year before. The ring below is the <em>30 largest</em> U.S. metros trading people all at once; click any metro, on the ring or the map, to see who it trades with, whether it&rsquo;s <em>gaining or losing</em>, and what those movers earn.';
 
 // ── Hints (07 §4) ──
 export const HERO_HINT_NATIONAL =
   'Each ribbon is people exchanged between two metros; colour is net direction (cool = gaining, warm = leaving). Hover a metro on the map to link it here.';
 export const HERO_HINT_SELECTED_DESKTOP =
-  'Its ribbons are lit; the other 30 metros are dimmed to context. Click the centre or “National view” to reset.';
+  'Its ribbons are lit; the other 29 metros are dimmed to context. Click the centre or “National view” to reset.';
 export const HERO_HINT_SELECTED_MOBILE =
   'Its top partner metros ring the hub; arc colour is net direction with that partner. Rest of U.S. is the muted base spoke.';
 export const MAP_HINT = 'Dot size = total movers (in + out) · fill = net direction.';
@@ -43,12 +43,12 @@ export const LOADING = 'Drawing the ring…';
 export const FETCH_FAIL = 'The ring couldn’t load. Refresh to try again — the map and summary still work.';
 
 // ── Ring-centre (07 §4.1, §4.2) ──
-export const RING_CENTER_NATIONAL = '31 metros, one year';
+export const RING_CENTER_NATIONAL = '30 metros, one year';
 export const RING_CENTER_RESET = '↺ national view';
 
 // ── Accessibility copy (07 §6) ──
 export const HERO_ARIA =
-  'Migration chord of the 31 largest U.S. metros — the 30 biggest, plus Louisville — sized by people exchanged and coloured by net direction.';
+  'Migration chord of the 30 largest U.S. metros, sized by people exchanged and coloured by net direction.';
 export const MAP_ARIA = 'U.S. metro net-migration map; use the menu above, or Tab to a metro, to select it.';
 export const SELECT_LABEL = 'Choose a metro';
 
@@ -71,7 +71,7 @@ export function nationalPanelHTML(): string {
   return `
   <div class="panelhead"><div class="panel-title" style="margin:0">The national picture · at rest</div></div>
   <div class="nat">
-    <p class="lead">Of these <b>${N}</b> metros — the 30 largest, plus Louisville — <b class="pos">${N_DEST}</b> are net destinations and <b class="neg">${N_DEPART}</b> are net departures${evenClause}. They trade about <b>${approxTotal(
+    <p class="lead">Of the <b>${N}</b> largest U.S. metros, <b class="pos">${N_DEST}</b> are net destinations and <b class="neg">${N_DEPART}</b> are net departures${evenClause}. They trade about <b>${approxTotal(
       META.inter_metro_total
     )}</b> people with one another in a year — every ribbon in the ring.</p>
     <div class="ext">
@@ -94,7 +94,7 @@ function agiSub(v: number | null): string {
 function restLineHTML(m: MetroView): string {
   const head = `<b>Rest of U.S.</b> — <span class="mono">${fmtInt(m.rest_in)}</span> in · <span class="mono">${fmtInt(
     m.rest_out
-  )}</span> out with everywhere outside the 31 metros`;
+  )}</span> out with everywhere outside the 30 metros`;
   if (m.rest_sup_total > 0) {
     return `<div class="restline">${head}, including <span class="mono">${fmtInt(
       m.rest_sup_total

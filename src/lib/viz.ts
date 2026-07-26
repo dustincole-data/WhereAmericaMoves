@@ -20,7 +20,7 @@ export interface Tip {
   hide(): void;
 }
 
-// ── DESKTOP: dense directed 31-arc chord (ticket 04 B) ──
+// ── DESKTOP: dense directed 30-arc chord (ticket 04 B) ──
 export interface DenseHandles {
   highlight(idx: number, on: boolean): void;
 }

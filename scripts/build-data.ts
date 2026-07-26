@@ -1,5 +1,5 @@
 // build-data.ts — `npm run data`. The whole pipeline: fetch the two IRS SOI
-// county-to-county CSVs (download-once), roll county flows up to the 31 curated
+// county-to-county CSVs (download-once), roll county flows up to the 30 curated
 // metros via crosswalk.json, bucket the rest, and emit the three JSON files the
 // app is coded against. Deterministic, idempotent, zero runtime compute.
 //
@@ -56,8 +56,8 @@ function add(a: Agg, n1: number, n2: number, agi: number) {
 interface MetroAcc {
   totalUS: Agg; // Σ over anchor counties of the 97/000 (Total Migration-US) row
   intra: Agg; // disclosed moves where the other end is in the same metro
-  pairs: Map<string, Agg>; // other top-31 CBSA -> flow
-  restDirect: Agg; // disclosed specific non-top-31 county
+  pairs: Map<string, Agg>; // other top-30 CBSA -> flow
+  restDirect: Agg; // disclosed specific non-top-30 county
 }
 const newAcc = (): MetroAcc => ({ totalUS: zero(), intra: zero(), pairs: new Map(), restDirect: zero() });
 
@@ -94,7 +94,7 @@ function aggregate(csv: string, anchorS: number, anchorC: number, otherS: number
   for (const r of rows) {
     const aFips = String(r[anchorS]).padStart(2, '0') + String(r[anchorC]).padStart(3, '0');
     const A = crosswalk[aFips];
-    if (!A) continue; // anchor county not in a top-31 metro → irrelevant
+    if (!A) continue; // anchor county not in a top-30 metro → irrelevant
     let m = acc.get(A);
     if (!m) acc.set(A, (m = newAcc()));
 
@@ -121,9 +121,9 @@ function aggregate(csv: string, anchorS: number, anchorC: number, otherS: number
     } else if (B) {
       let p = m.pairs.get(B);
       if (!p) m.pairs.set(B, (p = zero()));
-      add(p, n1, n2, agi); // top-31 ↔ top-31 directed flow
+      add(p, n1, n2, agi); // top-30 ↔ top-30 directed flow
     } else {
-      add(m.restDirect, n1, n2, agi); // specific non-top-31 county → rest of U.S. (direct)
+      add(m.restDirect, n1, n2, agi); // specific non-top-30 county → rest of U.S. (direct)
     }
   }
   return acc;
@@ -258,7 +258,7 @@ async function main() {
     });
   }
 
-  // ── QA: how many directed top-31↔top-31 pairs are absent (suppressed) in outflow ──
+  // ── QA: how many directed top-30↔top-30 pairs are absent (suppressed) in outflow ──
   let suppressedTopMetroPairs = 0;
   for (const A of METROS) {
     const m = outAcc.get(A.cbsa);
@@ -283,7 +283,7 @@ async function main() {
 
   // ── QA asserts (fail loud) ──
   const problems: string[] = [];
-  if (summary.length !== 31) problems.push(`metro_count = ${summary.length}, expected 31`);
+  if (summary.length !== 30) problems.push(`metro_count = ${summary.length}, expected 30`);
   for (const s of summary) {
     if (!(s.total_in > 0) || !(s.total_out > 0)) problems.push(`${s.name}: total_in/out not positive`);
     if (s.agi_avg_in_dollars == null || s.agi_avg_out_dollars == null) problems.push(`${s.name}: null AGI avg`);
@@ -312,11 +312,11 @@ async function main() {
     metro_count: build_meta.metro_count,
     pair_rows: build_meta.pair_rows,
     inter_metro_total: build_meta.inter_metro_total,
-    suppressed_top_metro_pairs: `${build_meta.suppressed_top_metro_pairs} / ${31 * 30}`,
+    suppressed_top_metro_pairs: `${build_meta.suppressed_top_metro_pairs} / ${30 * 29}`,
     inflow_outflow_discrepancies: build_meta.inflow_outflow_discrepancies,
     max_discrepancy_pct: build_meta.max_discrepancy_pct + '%',
   });
-  const spot = summary.filter((s) => s.cbsa === '35620' || s.cbsa === '31140');
+  const spot = summary.filter((s) => s.cbsa === '35620' || s.cbsa === '38060');
   for (const s of spot) {
     console.log(
       `\n${s.name} (${s.cbsa}): in ${s.total_in.toLocaleString()} · out ${s.total_out.toLocaleString()} · net ${s.net >= 0 ? '+' : '−'}${Math.abs(s.net).toLocaleString()}` +

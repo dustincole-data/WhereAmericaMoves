@@ -154,7 +154,7 @@ export async function renderHomeCard(): Promise<Buffer> {
         HEADLINE
       ),
       el('div', { display: 'flex', flexDirection: 'column' }, [
-        el('div', { fontFamily: 'JetBrains Mono', fontSize: 30, color: INK2, marginBottom: 20 }, '31 metros · one year · IRS SOI'),
+        el('div', { fontFamily: 'JetBrains Mono', fontSize: 30, color: INK2, marginBottom: 20 }, '30 metros · one year · IRS SOI'),
         spectralBar(),
         footerRow(),
       ]),

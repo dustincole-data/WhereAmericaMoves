@@ -138,7 +138,7 @@ function renderPanel() {
 // ── frame head + live region ──
 function syncHead() {
   if (selected === null) {
-    scopeEl.textContent = 'All 31 metros';
+    scopeEl.textContent = 'All 30 metros';
     verdictEl.className = 'verdict';
     verdictEl.textContent = '';
     hintEl.textContent = HERO_HINT_NATIONAL;

@@ -1,6 +1,5 @@
 // Where America Moves — the curated metro set (ticket 03 §6, locked).
-// 30 largest CBSAs by population (Census Pop. Estimates, POPESTIMATE2023)
-// + Louisville (31140), a deliberate hometown addition → N = 31.
+// 30 largest CBSAs by population (Census Pop. Estimates, POPESTIMATE2023) → N = 30.
 //
 // CHECKED IN. This is static geographic config, not "the data": it changes only
 // when OMB re-delineates CBSAs (every several years). `population` is a July-2023
@@ -53,8 +52,6 @@ export const METROS: Metro[] = [
   { cbsa: '38300', full: 'Pittsburgh, PA', short: 'Pittsburgh', state: 'PA', slug: 'pittsburgh', population: 2428225, lat: 40.44, lon: -79.996 },
   { cbsa: '29820', full: 'Las Vegas-Henderson-North Las Vegas, NV', short: 'Las Vegas', state: 'NV', slug: 'las-vegas', population: 2351008, lat: 36.17, lon: -115.14 },
   { cbsa: '17140', full: 'Cincinnati, OH-KY-IN', short: 'Cincinnati', state: 'OH-KY-IN', slug: 'cincinnati', population: 2281096, lat: 39.1, lon: -84.51 },
-  // Hometown addition (not a rank change): Louisville, CBSA 31140.
-  { cbsa: '31140', full: 'Louisville/Jefferson County, KY-IN', short: 'Louisville', state: 'KY-IN', slug: 'louisville', population: 1365557, lat: 38.25, lon: -85.76 },
 ];
 
 export const METRO_CBSAS: Set<string> = new Set(METROS.map((m) => m.cbsa));

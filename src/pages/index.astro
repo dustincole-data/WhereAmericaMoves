@@ -1,5 +1,5 @@
 ---
-// The explorer — Warm Atlas frame + 31-arc directed chord (client island) + choropleth
+// The explorer — Warm Atlas frame + 30-arc directed chord (client island) + choropleth
 // selector + rail panel. Composition/interaction/mobile/a11y = ticket 05; copy = ticket 07.
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
@@ -36,10 +36,10 @@ const ogImage = new URL('/og/index.png', site).href;
     <Header />
 
     <div class="stage">
-      <!-- HERO: dense 31-arc chord (desktop) / focus chord (mobile) -->
+      <!-- HERO: dense 30-arc chord (desktop) / focus chord (mobile) -->
       <div class="card chordcard">
         <div class="chordhead">
-          <div class="scope" id="scope">All 31 metros</div>
+          <div class="scope" id="scope">All 30 metros</div>
           <div class="verdict" id="verdict"></div>
         </div>
         <svg id="hero" viewBox="0 0 600 560" role="img" aria-label={HERO_ARIA}></svg>
