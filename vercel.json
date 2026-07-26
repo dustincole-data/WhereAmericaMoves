@@ -3,5 +3,9 @@
   "framework": "astro",
   "buildCommand": "npm run data && npm run build",
   "installCommand": "npm ci",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/metro/louisville", "destination": "/", "permanent": true },
+    { "source": "/metro/louisville/", "destination": "/", "permanent": true }
+  ]
 }
