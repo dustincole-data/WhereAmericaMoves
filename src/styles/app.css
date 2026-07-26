@@ -512,9 +512,12 @@ svg {
 }
 /* pinned by a tap — takes pointer events so its × (or a tap on it) can dismiss it */
 .tip.pinned {
-  pointer-events: auto;
-  cursor: pointer;
+  /* the body stays transparent to taps so it can never eat the tap meant for a
+     metro underneath it; only the × is a target */
   padding-right: 30px;
+}
+.tip.pinned .tipx {
+  pointer-events: auto;
 }
 .tip .tipx {
   position: absolute;

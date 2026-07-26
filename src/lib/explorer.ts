@@ -43,8 +43,8 @@ const isMobile = () => matchMedia('(max-width:640px)').matches;
 // ── tooltip ──
 // A touch has no hover to leave, so a tapped tip pins itself and carries explicit
 // dismissals: the ×, or a pointerdown anywhere off it (tap-away, or the start of a
-// scroll). Re-tapping the same mark dismisses too — that pointerdown hides it and no
-// fresh mouseenter follows on a mark the cursor is already over. Mouse hover is
+// scroll). The pinned body is transparent to pointers, so a tap that lands on top of
+// it still reaches the metro underneath and simply moves the tip there. Mouse hover is
 // untouched: it never pins, so mouseleave still does the work.
 let coarse = false;
 
@@ -163,6 +163,7 @@ const mapHandles = buildMap(
   MAX_NET,
   '/vendor/us-states-10m.json',
   (i) => select(i),
+  deselect,
   hoverMetro,
   tip
 );

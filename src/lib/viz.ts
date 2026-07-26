@@ -330,6 +330,7 @@ export function buildMap(
   maxNet: number,
   topojsonUrl: string,
   onSelect: (i: number) => void,
+  onDeselect: () => void,
   onHover: (i: number, on: boolean) => void,
   tip: Tip
 ): MapHandles {
@@ -349,6 +350,27 @@ export function buildMap(
   });
   const maxThru = Math.max(1, ...views.map((m) => m.total_in + m.total_out));
   const dotR = scaleSqrt().domain([0, maxThru]).range([3, 16]);
+
+  const dotTipHTML = (d: MetroView) =>
+    `<div class="tt">${d.name}, ${d.st}</div><span class="mono">${fmtInt(d.total_in)}</span> in · <span class="mono">${fmtInt(
+      d.total_out
+    )}</span> out<br>net <span class="mono ${d.net >= 0 ? 'in' : 'out'}">${fmtSigned(d.net)}</span> — ${gainLose(
+      d.net
+    )} people`;
+
+  // Touch never gets a dependable click: WebKit treats the first tap on a mark that
+  // reacts to hover as a hover, delivers the mouseenter that shows the tip, and
+  // swallows the click — so one tap raised the readout but never selected. Coarse
+  // pointers therefore select on pointerup (with a movement guard so a scroll that
+  // starts on a dot is not a tap); the mouse keeps using click.
+  let downX = 0,
+    downY = 0,
+    tapping = false;
+
+  // Tapping the map away from every metro is the way back to the national view.
+  svg.on('pointerup', (e: PointerEvent) => {
+    if (!(e.target as Element).closest?.('g.dot')) onDeselect();
+  });
 
   fetch(topojsonUrl)
     .then((r) => r.json())
@@ -406,6 +428,21 @@ export function buildMap(
       .attr('transform', (d: any) => `translate(${d.mx},${d.my})`)
       .attr('aria-label', (d) => `${d.name} ${d.st}: net ${fmtSigned(d.net)}, ${gainLose(d.net)} people. Select.`)
       .on('click', (_e, d) => onSelect(d.i))
+      .on('pointerdown', (e: PointerEvent) => {
+        downX = e.clientX;
+        downY = e.clientY;
+        tapping = e.pointerType !== 'mouse';
+      })
+      .on('pointercancel', () => {
+        tapping = false;
+      })
+      .on('pointerup', (e: PointerEvent, d) => {
+        if (!tapping) return;
+        tapping = false;
+        if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) return;
+        onSelect(d.i);
+        tip.show(e as unknown as MouseEvent, dotTipHTML(d));
+      })
       .on('keydown', (e: KeyboardEvent, d) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -416,14 +453,7 @@ export function buildMap(
       .on('blur', (_e, d) => onHover(d.i, false))
       .on('mouseenter', (e: MouseEvent, d) => {
         onHover(d.i, true);
-        tip.show(
-          e,
-          `<div class="tt">${d.name}, ${d.st}</div><span class="mono">${fmtInt(
-            d.total_in
-          )}</span> in · <span class="mono">${fmtInt(d.total_out)}</span> out<br>net <span class="mono ${
-            d.net >= 0 ? 'in' : 'out'
-          }">${fmtSigned(d.net)}</span> — ${gainLose(d.net)} people`
-        );
+        tip.show(e, dotTipHTML(d));
       })
       .on('mousemove', (e: MouseEvent) => tip.move(e))
       .on('mouseleave', (_e, d) => {
