@@ -63,6 +63,10 @@ const tip: Tip = {
       h = tipEl.offsetHeight;
     if (x + w > innerWidth - 8) x = e.clientX - w - pad;
     if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+    // flipping can push a wide tip (the pinned one carries the ×) off the near edge on a
+    // narrow screen, so keep it on-screen after the flip
+    x = Math.max(8, Math.min(x, innerWidth - w - 8));
+    y = Math.max(8, Math.min(y, innerHeight - h - 8));
     tipEl.style.left = x + 'px';
     tipEl.style.top = y + 'px';
   },
