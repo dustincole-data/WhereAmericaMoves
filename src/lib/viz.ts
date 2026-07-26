@@ -24,6 +24,16 @@ export interface Tip {
 export interface DenseHandles {
   highlight(idx: number, on: boolean): void;
 }
+// A phone renders this SVG about 324 CSS px wide, so every unit below is worth
+// ~0.54 of a pixel at the desktop viewBox — which is what put the ring labels at
+// 5.1 CSS px and forced the old mobile fork. The compact geometry shrinks the
+// viewBox instead of the chord: the same 30 arcs, drawn at ~0.9 units-to-pixels.
+const DENSE = {
+  wide: { vb: '0 0 600 560', cx: 300, cy: 272, R: 210, label: 9.5, centre: 21, reset: 13, labels: 'all' },
+  compact: { vb: '0 0 360 360', cx: 180, cy: 180, R: 165, label: 12, centre: 17, reset: 12, labels: 'selection' },
+};
+export const DENSE_COMPACT_VIEWBOX = DENSE.compact.vb;
+
 export function renderDense(
   svgEl: SVGSVGElement,
   views: MetroView[],
@@ -32,19 +42,21 @@ export function renderDense(
   maxNet: number,
   onToggle: (i: number) => void,
   onDeselect: () => void,
-  tip: Tip
+  tip: Tip,
+  compact = false
 ): DenseHandles {
+  const G = compact ? DENSE.compact : DENSE.wide;
   const svg = select(svgEl);
   svg.selectAll('*').remove();
-  svg.attr('viewBox', '0 0 600 560').attr('aria-label', HERO_ARIA);
+  svg.attr('viewBox', G.vb).attr('aria-label', HERO_ARIA);
   const defs = svg.append('defs');
   defs.html(
     `<filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4"/></filter>`
   );
-  const cx = 300,
-    cy = 272,
-    R = 210,
-    ir = R - 14;
+  const cx = G.cx,
+    cy = G.cy,
+    R = G.R,
+    ir = R - (compact ? 11 : 14);
   const chords = chordDirected().padAngle(0.026).sortSubgroups(descending)(matrix);
   const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
   const arc = d3arc<any>().innerRadius(ir).outerRadius(R);
@@ -77,6 +89,7 @@ export function renderDense(
       handles.highlight(d.index, false);
       tip.hide();
     });
+  if (G.labels === 'all')
   grp
     .append('text')
     .each(function (d: any) {
@@ -84,7 +97,7 @@ export function renderDense(
     })
     .attr('dy', '.32em')
     .attr('font-family', 'var(--font-sans)')
-    .attr('font-size', 9.5)
+    .attr('font-size', G.label)
     .attr('fill', (d: any) => (d.index === selected ? 'var(--ink)' : 'var(--muted)'))
     .attr('font-weight', (d: any) => (d.index === selected ? 600 : 400))
     .attr(
@@ -95,6 +108,46 @@ export function renderDense(
     .text((d: any) => views[d.index].name)
     .style('cursor', 'pointer')
     .on('click', (_e: any, d: any) => onToggle(d.index));
+
+  // A phone has no room for 30 radial labels at a readable size: sized to be read
+  // they collide and squeeze the ring down to a doily. So the compact ring names
+  // only what the reader is actually looking at — the selected metro and the
+  // partners its lit ribbons run to — inside the ring, where there is room.
+  if (G.labels === 'selection' && hasSel) {
+    const weight = (j: number) => matrix[selected!][j] + matrix[j][selected!];
+    const named = new Set(
+      views
+        .map((_, j) => j)
+        .filter((j) => j !== selected)
+        .sort((a, b) => weight(b) - weight(a))
+        .slice(0, 6)
+        .concat(selected!)
+    );
+    g.append('g')
+      .selectAll('text')
+      .data(chords.groups.filter((d: any) => named.has(d.index)))
+      .join('text')
+      .each(function (d: any) {
+        d.ang = (d.startAngle + d.endAngle) / 2;
+      })
+      .attr('dy', '.32em')
+      .attr('font-family', 'var(--font-sans)')
+      .attr('font-size', G.label)
+      .attr('fill', (d: any) => (d.index === selected ? 'var(--ink)' : 'var(--ink-2)'))
+      .attr('font-weight', (d: any) => (d.index === selected ? 700 : 500))
+      .attr('stroke', 'var(--surface)')
+      .attr('stroke-width', 3)
+      .attr('paint-order', 'stroke')
+      .attr(
+        'transform',
+        (d: any) =>
+          `rotate(${(d.ang * 180) / Math.PI - 90}) translate(${ir - 9}) ${d.ang > Math.PI ? 'rotate(180)' : ''}`
+      )
+      .attr('text-anchor', (d: any) => (d.ang > Math.PI ? 'start' : 'end'))
+      .text((d: any) => views[d.index].name)
+      .style('cursor', 'pointer')
+      .on('click', (_e: any, d: any) => onToggle(d.index));
+  }
 
   // ribbons
   const rib = g
@@ -123,7 +176,7 @@ export function renderDense(
       .attr('text-anchor', 'middle')
       .attr('dy', '.32em')
       .attr('font-family', 'var(--font-serif)')
-      .attr('font-size', 13)
+      .attr('font-size', G.reset)
       .attr('fill', 'var(--muted)')
       .style('cursor', 'pointer')
       .text(RING_CENTER_RESET)
@@ -133,7 +186,7 @@ export function renderDense(
       .attr('text-anchor', 'middle')
       .attr('dy', '.32em')
       .attr('font-family', 'var(--font-hand)')
-      .attr('font-size', 21)
+      .attr('font-size', G.centre)
       .attr('fill', 'var(--muted)')
       .text(RING_CENTER_NATIONAL);
   }

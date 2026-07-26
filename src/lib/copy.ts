@@ -29,16 +29,15 @@ export const DEK =
 
 // ── Hints (07 §4) ──
 export const HERO_HINT_NATIONAL =
-  'Each ribbon is people exchanged between two metros; colour is net direction (cool = gaining, warm = leaving). Hover a metro on the map to link it here.';
-export const HERO_HINT_SELECTED_DESKTOP =
-  'Its ribbons are lit; the other 29 metros are dimmed to context. Click the centre or “National view” to reset.';
-export const HERO_HINT_SELECTED_MOBILE =
+  'Each ribbon is people exchanged between two metros; colour is net direction (cool = gaining, warm = leaving). Pick a metro on the map to light it here.';
+export const HERO_HINT_SELECTED =
+  'Its ribbons are lit; the other 29 metros are dimmed to context. Use the ring centre or “National view” to reset.';
+// the share pages keep the focus-chord form, so they keep its own hint
+export const HERO_HINT_FOCUS_CHORD =
   'Its top partner metros ring the hub; arc colour is net direction with that partner. Rest of U.S. is the muted base spoke.';
 export const MAP_HINT = 'Dot size = total movers (in + out) · fill = net direction.';
 
 // ── At-rest / loading / error (07 §4.4, §4.5, §8) ──
-export const MOBILE_PLACEHOLDER_1 = 'Tap a metro on the map above';
-export const MOBILE_PLACEHOLDER_2 = 'to see who it trades people with.';
 export const LOADING = 'Drawing the ring…';
 export const FETCH_FAIL = 'The ring couldn’t load. Refresh to try again — the map and summary still work.';
 

@@ -4,7 +4,7 @@
 import { select as d3select } from 'd3-selection';
 import { VIEWS, MAX_NET, CBSA_TO_INDEX } from './data';
 import type { MetroView } from './data';
-import { renderDense, renderFocus, buildMap } from './viz';
+import { renderDense, buildMap, DENSE_COMPACT_VIEWBOX } from './viz';
 import type { DenseHandles, Tip } from './viz';
 import {
   nationalPanelHTML,
@@ -12,12 +12,9 @@ import {
   liveNational,
   liveMetro,
   HERO_HINT_NATIONAL,
-  HERO_HINT_SELECTED_DESKTOP,
-  HERO_HINT_SELECTED_MOBILE,
+  HERO_HINT_SELECTED,
   LOADING,
   FETCH_FAIL,
-  MOBILE_PLACEHOLDER_1,
-  MOBILE_PLACEHOLDER_2,
 } from './copy';
 import { verdictShort } from './format';
 
@@ -90,11 +87,12 @@ tipEl.addEventListener('click', () => tip.hide());
 function heroMessage(text: string) {
   const svg = d3select(heroSvg);
   svg.selectAll('*').remove();
-  svg.attr('viewBox', '0 0 600 560');
+  const compact = isMobile();
+  svg.attr('viewBox', compact ? DENSE_COMPACT_VIEWBOX : '0 0 600 560');
   svg
     .append('text')
-    .attr('x', 300)
-    .attr('y', 272)
+    .attr('x', compact ? 180 : 300)
+    .attr('y', compact ? 180 : 272)
     .attr('text-anchor', 'middle')
     .attr('font-family', 'var(--font-serif)')
     .attr('font-size', 16)
@@ -102,23 +100,10 @@ function heroMessage(text: string) {
     .text(text);
 }
 
-function onPartner(p: MetroView['partners'][number]) {
-  const idx = CBSA_TO_INDEX.get(p.cbsa);
-  if (idx != null) select(idx);
-}
-
 function renderHero() {
-  if (isMobile()) {
-    denseHandles = null;
-    renderFocus(heroSvg, selected === null ? null : VIEWS[selected], MAX_NET, onPartner, [
-      MOBILE_PLACEHOLDER_1,
-      MOBILE_PLACEHOLDER_2,
-    ]);
-    return;
-  }
   if (fetchFailed) return heroMessage(FETCH_FAIL);
   if (!matrix) return heroMessage(LOADING);
-  denseHandles = renderDense(heroSvg, VIEWS, matrix, selected, MAX_NET, toggle, deselect, tip);
+  denseHandles = renderDense(heroSvg, VIEWS, matrix, selected, MAX_NET, toggle, deselect, tip, isMobile());
 }
 
 // ── panel ──
@@ -147,7 +132,7 @@ function syncHead() {
     scopeEl.innerHTML = `${m.name} <span class="st">${m.st}</span>`;
     verdictEl.className = 'verdict ' + (m.net >= 0 ? 'pos' : 'neg');
     verdictEl.textContent = verdictShort(m.net);
-    hintEl.textContent = isMobile() ? HERO_HINT_SELECTED_MOBILE : HERO_HINT_SELECTED_DESKTOP;
+    hintEl.textContent = HERO_HINT_SELECTED;
   }
 }
 
@@ -169,7 +154,7 @@ const mapHandles = buildMap(
 );
 
 function hoverMetro(i: number, on: boolean) {
-  if (!isMobile() && denseHandles) denseHandles.highlight(i, on);
+  if (denseHandles) denseHandles.highlight(i, on);
   (d3select(mapSvg).selectAll('g.dot').select('.core') as any).attr('opacity', (d: MetroView) =>
     on ? (d.i === i ? 1 : 0.4) : 1
   );
@@ -242,9 +227,9 @@ fetch('/data/metro_pairs.json')
       if (i != null && j != null && i !== j) mx[i][j] += p.people;
     }
     matrix = mx;
-    if (!isMobile()) renderHero();
+    renderHero();
   })
   .catch(() => {
     fetchFailed = true;
-    if (!isMobile()) renderHero();
+    renderHero();
   });
