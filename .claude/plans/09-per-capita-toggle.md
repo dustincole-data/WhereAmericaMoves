@@ -81,7 +81,8 @@ Lives in `data.ts` next to the view model; imported by `viz.ts`, `copy.ts`, `for
 | dot fill + halo | `netColor(net, MAX_NET)` | `netColor(net_rate, MAX_NET_RATE)` |
 | dot radius | `scaleSqrt([0, max(total_in+total_out)] → [3,16])` | `scaleSqrt([0, max(churn_rate)] → [3,16])` |
 
-- **Keep the zero baseline** on the sqrt size domain in both modes. Non-zero-baseline area encoding exaggerates differences and is not worth it here: the flip is already legible (New York 16.0 → 10.1 px; Austin 8.9 → 15.7 px).
+- **Keep the zero baseline** on the sqrt size domain in both modes. Non-zero-baseline area encoding exaggerates differences and is not worth it here: the rank flip is total and legible (New York 16.0 → 11.2 px; Austin 10.2 → 15.8 px; Orlando 10.9 → 16.0 px, the rate-mode maximum).
+- **Known consequence, accepted:** the `[3,16]` range floor plus a churn-rate spread that bottoms out at 40% of its max compresses rate-mode dots into 11.2–16.0 px, against People mode's 7.6–16.0. Size differences read more softly in rate mode; the *ranking* inverts completely and colour carries net independently. Shifting the domain off zero would restore the spread by lying about the ratios — do not.
 - Both scales are built once at `buildMap` time; `draw()` picks by current mode.
 - `dotTipHTML` and the dot `aria-label` become mode-aware (§6.3, §6.4).
 

@@ -411,8 +411,9 @@ export function buildMap(
   });
   const maxThru = Math.max(1, ...views.map((m) => m.total_in + m.total_out));
   const dotR = scaleSqrt().domain([0, maxThru]).range([3, 16]);
-  // Rate mode keeps the zero baseline: a shifted domain would exaggerate, and the flip
-  // is already legible (New York 16.0 → 10.1 px, Austin 8.9 → 15.7 px). 09 §3.2.
+  // Rate mode keeps the zero baseline: a shifted domain would restore some spread by
+  // lying about the ratios. The rank flip is total either way (New York 16.0 → 11.2 px,
+  // Austin 10.2 → 15.8 px), and colour carries net independently. 09 §3.2.
   const maxChurnRate = Math.max(1e-9, ...views.map((m) => m.churn_rate));
   const dotRRate = scaleSqrt().domain([0, maxChurnRate]).range([3, 16]);
 
