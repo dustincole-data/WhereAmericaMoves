@@ -6,6 +6,8 @@ import {
   fmtInt,
   fmtSigned,
   fmtAgi,
+  fmtRate,
+  fmtRateAbs,
   gainLose,
   verdictArticle,
   approxTotal,
@@ -13,8 +15,18 @@ import {
   spreadHandles,
   CAP_MERGE_GAP,
 } from './format';
-import type { MetroView } from './data';
-import { META, N_DEST, N_DEPART, N_EVEN, TOP_GAIN, TOP_LOSS, VIEWS } from './data';
+import type { MetroView, Mode } from './data';
+import {
+  META,
+  N_DEST,
+  N_DEPART,
+  N_EVEN,
+  TOP_GAIN,
+  TOP_LOSS,
+  TOP_GAIN_RATE,
+  TOP_LOSS_RATE,
+  VIEWS,
+} from './data';
 
 const N = VIEWS.length;
 
@@ -37,6 +49,18 @@ export const HERO_HINT_FOCUS_CHORD =
   'Its top partner metros ring the hub; arc colour is net direction with that partner. Rest of U.S. is the muted base spoke.';
 export const MAP_HINT = 'Dot size = total movers (in + out) · fill = net direction.';
 
+// ── Per-capita mode (09 §6) — additive; every string above stays verbatim in People mode ──
+export const MODE_GROUP_LABEL = 'Show figures as';
+export const MODE_LABEL_PEOPLE = 'People';
+export const MODE_LABEL_RATE = 'Per 1,000 residents';
+export const MODE_LABEL_RATE_SHORT = 'Per 1,000';
+export const HERO_HINT_NATIONAL_RATE =
+  'Each ribbon is people exchanged between two metros, per 1,000 residents of the metro they left; colour is net direction (cool = gaining, warm = leaving). Pick a metro on the map to light it here.';
+export const MAP_HINT_RATE = 'Dot size = total movers (in + out) per 1,000 residents · fill = net direction.';
+/** The numerator and denominator are different universes; the page has to say so (09 §6.5). */
+export const DENOMINATOR_NOTE =
+  'Rates use Census 2023 metro population. IRS migration counts tax filers and their dependents — not every resident — so rates run slightly low.';
+
 // ── At-rest / loading / error (07 §4.4, §4.5, §8) ──
 export const LOADING = 'Drawing the ring…';
 export const FETCH_FAIL = 'The ring couldn’t load. Refresh to try again — the map and summary still work.';
@@ -51,22 +75,37 @@ export const HERO_ARIA =
 export const MAP_ARIA = 'U.S. metro net-migration map; use the menu above, or Tab to a metro, to select it.';
 export const SELECT_LABEL = 'Choose a metro';
 
-export const dotAria = (m: MetroView): string =>
-  `${m.name} ${m.st}: net ${fmtSigned(m.net)}, ${gainLose(m.net)} people. Select.`;
+export const dotAria = (m: MetroView, mode: Mode = 'people'): string =>
+  mode === 'per1k'
+    ? `${m.name} ${m.st}: net ${fmtRate(m.net_rate)} per 1,000 residents, ${gainLose(m.net)}. Select.`
+    : `${m.name} ${m.st}: net ${fmtSigned(m.net)}, ${gainLose(m.net)} people. Select.`;
 
+/** Unchanged in both modes: the destination count is identical under a positive rescale (09 §2.3). */
 export const liveNational = (): string => `National view. ${N_DEST} of ${N} metros are gaining people.`;
 
-export const liveMetro = (m: MetroView): string => {
-  const base = `${m.name}, ${m.st} selected. ${fmtInt(m.total_in)} moved in, ${fmtInt(
-    m.total_out
-  )} moved out, net ${fmtSigned(m.net)}, ${gainLose(m.net)} people.`;
+export const liveMetro = (m: MetroView, mode: Mode = 'people'): string => {
+  const base =
+    mode === 'per1k'
+      ? `${m.name}, ${m.st} selected. ${fmtRateAbs(m.in_rate)} moved in per 1,000 residents, ${fmtRateAbs(
+          m.out_rate
+        )} moved out, net ${fmtRate(m.net_rate)}, ${gainLose(m.net)}.`
+      : `${m.name}, ${m.st} selected. ${fmtInt(m.total_in)} moved in, ${fmtInt(
+          m.total_out
+        )} moved out, net ${fmtSigned(m.net)}, ${gainLose(m.net)} people.`;
+  // AGI never normalises — it is already a per-person average (09 §5.1).
   if (m.agi_in == null || m.agi_out == null) return `${base} Average income isn’t available for this metro.`;
   return `${base} Average AGI ${fmtAgi(m.agi_in)} in versus ${fmtAgi(m.agi_out)} out.`;
 };
 
 // ── National panel (07 §4.1) ──
-export function nationalPanelHTML(): string {
+export function nationalPanelHTML(mode: Mode = 'people'): string {
   const evenClause = N_EVEN > 0 ? ` (and ${N_EVEN} in balance)` : '';
+  // Only the two extremes cells move: the lead sentence's counts are mode-independent
+  // (09 §2.3) and the "about N million" total is a national count, not a comparison.
+  const per = mode === 'per1k';
+  const gain = per ? TOP_GAIN_RATE : TOP_GAIN;
+  const loss = per ? TOP_LOSS_RATE : TOP_LOSS;
+  const fig = (m: MetroView) => (per ? `${fmtRate(m.net_rate)} net per 1,000` : `${fmtSigned(m.net)} net`);
   return `
   <div class="panelhead"><div class="panel-title" style="margin:0">The national picture · at rest</div></div>
   <div class="nat">
@@ -74,12 +113,12 @@ export function nationalPanelHTML(): string {
       META.inter_metro_total
     )}</b> people with one another in a year — every ribbon in the ring.</p>
     <div class="ext">
-      <div class="c"><div class="lab">Biggest gain</div><div class="m">${TOP_GAIN.name}</div><div class="f pos">${fmtSigned(
-        TOP_GAIN.net
-      )} net</div></div>
-      <div class="c"><div class="lab">Biggest loss</div><div class="m">${TOP_LOSS.name}</div><div class="f neg">${fmtSigned(
-        TOP_LOSS.net
-      )} net</div></div>
+      <div class="c"><div class="lab">Biggest gain</div><div class="m">${gain.name}</div><div class="f pos">${fig(
+        gain
+      )}</div></div>
+      <div class="c"><div class="lab">Biggest loss</div><div class="m">${loss.name}</div><div class="f neg">${fig(
+        loss
+      )}</div></div>
     </div>
     <div class="cue"><b>Click any metro</b> — on the ring or the map — to light up its exchanges and read its in / out / net and what its movers earn.</div>
   </div>`;
@@ -90,12 +129,15 @@ function agiSub(v: number | null): string {
   return v == null ? '—' : `${fmtAgi(v)} avg AGI`;
 }
 
-function restLineHTML(m: MetroView): string {
-  const head = `<b>Rest of U.S.</b> — <span class="mono">${fmtInt(m.rest_in)}</span> in · <span class="mono">${fmtInt(
+function restLineHTML(m: MetroView, mode: Mode = 'people'): string {
+  // Counts, so they normalise the same way the headline figures do.
+  const rate = (n: number) => fmtRateAbs((n / m.pop) * 1000);
+  const f = mode === 'per1k' ? rate : fmtInt;
+  const head = `<b>Rest of U.S.</b> — <span class="mono">${f(m.rest_in)}</span> in · <span class="mono">${f(
     m.rest_out
   )}</span> out with everywhere outside the 30 metros`;
   if (m.rest_sup_total > 0) {
-    return `<div class="restline">${head}, including <span class="mono">${fmtInt(
+    return `<div class="restline">${head}, including <span class="mono">${f(
       m.rest_sup_total
     )}</span> in small flows the IRS suppressed and we keep separate.</div>`;
   }
@@ -150,23 +192,26 @@ export const metroDesc = (m: MetroView): string =>
 
 /** verdict + 3-cell readout + rest line + income. Shared verbatim; the surrounding
     header (name + reset chip on the explorer, page heading + link on share) differs. */
-export function metroPanelCoreHTML(m: MetroView): string {
-  const v = m.net >= 0 ? 'pos' : 'neg';
+export function metroPanelCoreHTML(m: MetroView, mode: Mode = 'people'): string {
+  const v = m.net >= 0 ? 'pos' : 'neg'; // sign is mode-independent (09 §2.3)
+  const per = mode === 'per1k';
+  // In rate mode the sub-lines carry the unit; AGI keeps riding the dumbbell below,
+  // in dollars, in both modes — it is already a per-person average (09 §5.1).
+  const figIn = per ? fmtRateAbs(m.in_rate) : fmtInt(m.total_in);
+  const figOut = per ? fmtRateAbs(m.out_rate) : fmtInt(m.total_out);
+  const figNet = per ? fmtRate(m.net_rate) : fmtSigned(m.net);
+  const subIn = per ? 'per 1,000 residents' : agiSub(m.agi_in);
+  const subOut = per ? 'per 1,000 residents' : agiSub(m.agi_out);
+  const subNet = per ? `${gainLose(m.net)}, per 1,000` : `${gainLose(m.net)} people`;
   return `
   <div class="verdict ${v}" style="font-family:var(--font-serif);font-style:italic;font-size:14px;margin:-2px 0 11px">${verdictArticle(
     m.net
   )}</div>
   <div class="readout">
-    <div class="cell"><div class="lab">Moved in</div><div class="fig">${fmtInt(
-      m.total_in
-    )}</div><div class="sub">${agiSub(m.agi_in)}</div></div>
-    <div class="cell"><div class="lab">Moved out</div><div class="fig">${fmtInt(
-      m.total_out
-    )}</div><div class="sub">${agiSub(m.agi_out)}</div></div>
-    <div class="cell"><div class="lab">Net</div><div class="fig ${v}">${fmtSigned(
-      m.net
-    )}</div><div class="sub ${v}">${gainLose(m.net)} people</div></div>
+    <div class="cell"><div class="lab">Moved in</div><div class="fig">${figIn}</div><div class="sub">${subIn}</div></div>
+    <div class="cell"><div class="lab">Moved out</div><div class="fig">${figOut}</div><div class="sub">${subOut}</div></div>
+    <div class="cell"><div class="lab">Net</div><div class="fig ${v}">${figNet}</div><div class="sub ${v}">${subNet}</div></div>
   </div>
-  ${restLineHTML(m)}
+  ${restLineHTML(m, mode)}
   ${incomeHTML(m)}`;
 }
