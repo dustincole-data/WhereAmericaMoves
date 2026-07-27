@@ -40,11 +40,12 @@ const { title, description, ogTitle, ogDesc, ogImage, canonical } = Astro.props;
     <meta name="twitter:image" content={ogImage} />
   </head>
   <body data-palette="#1A6E9E,#BC4E37">
-    <slot />
+    <main>
+      <slot />
+    </main>
 
     <!-- dustincoledata brand mark -->
-    <a class="dcd-mark" href="https://dustincoledata.com" target="_blank" rel="noopener"
-       aria-label="A Dustin Cole Data project">
+    <a class="dcd-mark" href="https://dustincoledata.com" target="_blank" rel="noopener">
       <span class="dcd-mark-name">Dustin Cole</span><span class="dcd-mark-suffix">Data</span>
     </a>
     <style>
