@@ -10,9 +10,10 @@ import { scaleSqrt } from 'd3-scale';
 import { geoAlbersUsa, geoPath } from 'd3-geo';
 import { feature, mesh } from 'topojson-client';
 import { netColor } from './colors';
-import { fmtInt, fmtSigned, gainLose } from './format';
-import { HERO_ARIA, RING_CENTER_NATIONAL, RING_CENTER_RESET } from './copy';
-import type { MetroView } from './data';
+import { fmtInt, fmtSigned, fmtRate, fmtRateAbs, gainLose } from './format';
+import { HERO_ARIA, RING_CENTER_NATIONAL, RING_CENTER_RESET, dotAria } from './copy';
+import type { MetroView, Mode } from './data';
+import { MAX_NET_RATE } from './data';
 
 export interface Tip {
   show(e: MouseEvent, html: string): void;
@@ -43,9 +44,13 @@ export function renderDense(
   onToggle: (i: number) => void,
   onDeselect: () => void,
   tip: Tip,
-  compact = false
+  compact = false,
+  mode: Mode = 'people'
 ): DenseHandles {
   const G = compact ? DENSE.compact : DENSE.wide;
+  // In rate mode the caller passes the rate matrix and MAX_NET_RATE; the arcs and
+  // ribbons must colour off the matching net measure or the two disagree (09 §3.1).
+  const netOf = (v: MetroView) => (mode === 'per1k' ? v.net_rate : v.net);
   const svg = select(svgEl);
   svg.selectAll('*').remove();
   svg.attr('viewBox', G.vb).attr('aria-label', HERO_ARIA);
@@ -68,7 +73,7 @@ export function renderDense(
   grp
     .append('path')
     .attr('d', arc as any)
-    .attr('fill', (d: any) => netColor(views[d.index].net, maxNet))
+    .attr('fill', (d: any) => netColor(netOf(views[d.index]), maxNet))
     .attr('stroke', 'var(--surface)')
     .attr('stroke-width', 0.8)
     .attr('opacity', (d: any) => (hasSel ? (d.index === selected ? 1 : 0.42) : 0.9))
@@ -77,11 +82,13 @@ export function renderDense(
     .on('mouseenter', (e: MouseEvent, d: any) => {
       handles.highlight(d.index, true);
       const m = views[d.index];
+      const fig =
+        mode === 'per1k' ? `${fmtRate(m.net_rate)}</span> per 1,000` : `${fmtSigned(m.net)}</span>`;
       tip.show(
         e,
-        `<div class="tt">${m.name}, ${m.st}</div>net <span class="mono ${m.net >= 0 ? 'in' : 'out'}">${fmtSigned(
-          m.net
-        )}</span> — ${gainLose(m.net)}`
+        `<div class="tt">${m.name}, ${m.st}</div>net <span class="mono ${
+          m.net >= 0 ? 'in' : 'out'
+        }">${fig} — ${gainLose(m.net)}`
       );
     })
     .on('mousemove', (e: MouseEvent) => tip.move(e))
@@ -158,7 +165,7 @@ export function renderDense(
     .join('path')
     .attr('d', ribbon)
     .attr('stroke', 'none')
-    .attr('fill', (d: any) => netColor(views[d.source.index].net, maxNet))
+    .attr('fill', (d: any) => netColor(netOf(views[d.source.index]), maxNet))
     .attr('opacity', (d: any) => {
       if (!hasSel) return 0.14;
       return d.source.index === selected || d.target.index === selected ? 0.92 : 0.035;
@@ -385,7 +392,8 @@ export function buildMap(
   onSelect: (i: number) => void,
   onDeselect: () => void,
   onHover: (i: number, on: boolean) => void,
-  tip: Tip
+  tip: Tip,
+  getMode: () => Mode = () => 'people'
 ): MapHandles {
   const svg = select(svgEl);
   const MW = 640,
@@ -403,13 +411,29 @@ export function buildMap(
   });
   const maxThru = Math.max(1, ...views.map((m) => m.total_in + m.total_out));
   const dotR = scaleSqrt().domain([0, maxThru]).range([3, 16]);
+  // Rate mode keeps the zero baseline: a shifted domain would exaggerate, and the flip
+  // is already legible (New York 16.0 → 10.1 px, Austin 8.9 → 15.7 px). 09 §3.2.
+  const maxChurnRate = Math.max(1e-9, ...views.map((m) => m.churn_rate));
+  const dotRRate = scaleSqrt().domain([0, maxChurnRate]).range([3, 16]);
+
+  /** Fill and size must switch together or the map is mixed-unit (09 §3.2). */
+  const dotSize = (d: MetroView) =>
+    getMode() === 'per1k' ? dotRRate(d.churn_rate) : dotR(d.total_in + d.total_out);
+  const dotFill = (d: MetroView) =>
+    getMode() === 'per1k' ? netColor(d.net_rate, MAX_NET_RATE) : netColor(d.net, maxNet);
 
   const dotTipHTML = (d: MetroView) =>
-    `<div class="tt">${d.name}, ${d.st}</div><span class="mono">${fmtInt(d.total_in)}</span> in · <span class="mono">${fmtInt(
-      d.total_out
-    )}</span> out<br>net <span class="mono ${d.net >= 0 ? 'in' : 'out'}">${fmtSigned(d.net)}</span> — ${gainLose(
-      d.net
-    )} people`;
+    getMode() === 'per1k'
+      ? `<div class="tt">${d.name}, ${d.st}</div><span class="mono">${fmtRateAbs(
+          d.in_rate
+        )}</span> in · <span class="mono">${fmtRateAbs(d.out_rate)}</span> out<br>net <span class="mono ${
+          d.net >= 0 ? 'in' : 'out'
+        }">${fmtRate(d.net_rate)}</span> per 1,000 — ${gainLose(d.net)}`
+      : `<div class="tt">${d.name}, ${d.st}</div><span class="mono">${fmtInt(
+          d.total_in
+        )}</span> in · <span class="mono">${fmtInt(d.total_out)}</span> out<br>net <span class="mono ${
+          d.net >= 0 ? 'in' : 'out'
+        }">${fmtSigned(d.net)}</span> — ${gainLose(d.net)} people`;
 
   // Touch never gets a dependable click: WebKit treats the first tap on a mark that
   // reacts to hover as a hover, delivers the mouseenter that shows the tip, and
@@ -479,7 +503,7 @@ export function buildMap(
       });
     dots
       .attr('transform', (d: any) => `translate(${d.mx},${d.my})`)
-      .attr('aria-label', (d) => `${d.name} ${d.st}: net ${fmtSigned(d.net)}, ${gainLose(d.net)} people. Select.`)
+      .attr('aria-label', (d) => dotAria(d, getMode()))
       .on('click', (_e, d) => onSelect(d.i))
       .on('pointerdown', (e: PointerEvent) => {
         downX = e.clientX;
@@ -515,18 +539,18 @@ export function buildMap(
       });
     dots
       .select('.halo')
-      .attr('r', (d) => dotR(d.total_in + d.total_out) + 5)
-      .attr('fill', (d) => netColor(d.net, maxNet))
+      .attr('r', (d) => dotSize(d) + 5)
+      .attr('fill', dotFill)
       .attr('opacity', 0.14);
     dots
       .select('.core')
-      .attr('r', (d) => dotR(d.total_in + d.total_out))
-      .attr('fill', (d) => netColor(d.net, maxNet))
+      .attr('r', dotSize)
+      .attr('fill', dotFill)
       .attr('stroke', 'var(--surface)')
       .attr('stroke-width', 1);
     dots
       .select('.ring')
-      .attr('r', (d) => dotR(d.total_in + d.total_out) + 3.5)
+      .attr('r', (d) => dotSize(d) + 3.5)
       .attr('fill', 'none')
       .attr('stroke', 'var(--ink)')
       .attr('stroke-width', (d) => (d.i === selected ? 2 : 0));
