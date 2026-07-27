@@ -13,6 +13,10 @@ import {
   MAP_ARIA,
   MAP_HINT,
   SELECT_LABEL,
+  MODE_GROUP_LABEL,
+  MODE_LABEL_PEOPLE,
+  MODE_LABEL_RATE,
+  MODE_LABEL_RATE_SHORT,
   HOME_TITLE,
   HOME_DESC,
   OG_HOME_TITLE,
@@ -40,7 +44,17 @@ const ogImage = new URL('/og/index.png', site).href;
       <div class="card chordcard">
         <div class="chordhead">
           <div class="scope" id="scope">All 30 metros</div>
-          <div class="verdict" id="verdict"></div>
+          <div class="headright">
+            <div class="modeswitch" id="modeSwitch" role="radiogroup" aria-label={MODE_GROUP_LABEL}>
+              <button type="button" role="radio" data-mode="people" aria-checked="true" tabindex="0"
+                >{MODE_LABEL_PEOPLE}</button
+              >
+              <button type="button" role="radio" data-mode="per1k" aria-checked="false" tabindex="-1"
+                ><span class="wide">{MODE_LABEL_RATE}</span><span class="narrow">{MODE_LABEL_RATE_SHORT}</span></button
+              >
+            </div>
+            <div class="verdict" id="verdict"></div>
+          </div>
         </div>
         <svg id="hero" viewBox="0 0 600 560" role="img" aria-label={HERO_ARIA}></svg>
         <div class="hint" id="herohint">{HERO_HINT_NATIONAL}</div>
@@ -59,7 +73,7 @@ const ogImage = new URL('/og/index.png', site).href;
           </div>
         </div>
         <svg id="map" viewBox="0 0 640 400" role="img" aria-label={MAP_ARIA}></svg>
-        <div class="hint">{MAP_HINT}</div>
+        <div class="hint" id="maphint">{MAP_HINT}</div>
       </div>
 
       <!-- RAIL: panel (national summary at rest; swaps to metro readout on select) -->

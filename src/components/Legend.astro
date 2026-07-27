@@ -1,6 +1,9 @@
 ---
 // Legend-as-art (Lupi) — verbatim from 07 §5.5. Rest-of-U.S. row reads
 // "everywhere outside the 30 metros" (the fix vs the prototype's "top 30").
+// The rate note (09 §6.5) is revealed by explorer.ts in per-capita mode; the share
+// pages import this component but never run the explorer, so it stays hidden there.
+import { DENOMINATOR_NOTE } from '../lib/copy';
 ---
 
 <div class="card legendcard">
@@ -35,4 +38,5 @@
       >within</i
     > each pole shows magnitude.
   </div>
+  <div class="foot ratenote" hidden>{DENOMINATOR_NOTE}</div>
 </div>

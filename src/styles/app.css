@@ -137,10 +137,52 @@ svg {
   font-weight: 400;
   font-size: 15px;
 }
+.chordhead .headright {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
 .chordhead .verdict {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 14px;
+}
+
+/* per-capita mode switch (09 §4) — same visual weight as #metroPick */
+.modeswitch {
+  display: inline-flex;
+  background: var(--ground);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+  flex: none;
+}
+.modeswitch button {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-radius: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.modeswitch button:hover {
+  color: var(--ink);
+}
+.modeswitch button[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--surface);
+}
+.modeswitch button:focus-visible {
+  outline: 2px solid var(--in-core);
+  outline-offset: 1px;
+}
+.modeswitch .narrow {
+  display: none;
 }
 .verdict.pos {
   color: var(--in-core);
@@ -655,5 +697,11 @@ svg {
   }
   .chordhead .scope {
     font-size: 17px;
+  }
+  .modeswitch .wide {
+    display: none;
+  }
+  .modeswitch .narrow {
+    display: inline;
   }
 }

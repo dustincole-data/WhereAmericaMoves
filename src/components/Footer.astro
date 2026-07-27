@@ -1,6 +1,7 @@
 ---
 // Methodology / footer — verbatim from 07 §7. Every caveat the data demands, once.
 import { META } from '../lib/data';
+import { DENOMINATOR_NOTE } from '../lib/copy';
 const yr = META.year_pair.replace('-', '–');
 ---
 
@@ -23,6 +24,7 @@ const yr = META.year_pair.replace('-', '–');
     Metros are Core-Based Statistical Areas under the Census delineation of July 2023. We show the 30 largest by
     population.
   </p>
+  <p>{DENOMINATOR_NOTE}</p>
   <p>
     The IRS suppresses any county-to-county flow under 20 returns to protect privacy. Those small flows are folded into
     “Rest of U.S.” and kept as a separate, labelled component — never mixed into a metro’s partner numbers.

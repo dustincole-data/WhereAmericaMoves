@@ -2,8 +2,8 @@
 // (ticket 05). Wires the chord + map + panel into a single coordinated instrument.
 
 import { select as d3select } from 'd3-selection';
-import { VIEWS, MAX_NET, CBSA_TO_INDEX } from './data';
-import type { MetroView } from './data';
+import { VIEWS, MAX_NET, MAX_NET_RATE, CBSA_TO_INDEX } from './data';
+import type { MetroView, Mode } from './data';
 import { renderDense, buildMap, DENSE_COMPACT_VIEWBOX } from './viz';
 import type { DenseHandles, Tip } from './viz';
 import {
@@ -12,7 +12,10 @@ import {
   liveNational,
   liveMetro,
   HERO_HINT_NATIONAL,
+  HERO_HINT_NATIONAL_RATE,
   HERO_HINT_SELECTED,
+  MAP_HINT,
+  MAP_HINT_RATE,
   LOADING,
   FETCH_FAIL,
 } from './copy';
@@ -29,9 +32,14 @@ const hintEl = $<HTMLDivElement>('#herohint');
 const pick = $<HTMLSelectElement>('#metroPick');
 const live = $<HTMLDivElement>('#live');
 const tipEl = $<HTMLDivElement>('#tip');
+const mapHintEl = $<HTMLDivElement>('#maphint');
+const modeSwitch = $<HTMLDivElement>('#modeSwitch');
+const rateNote = document.querySelector<HTMLElement>('.ratenote');
 
 let selected: number | null = null;
+let mode: Mode = 'people'; // raw counts stay the front door (09 §4)
 let matrix: number[][] | null = null;
+let matrixRate: number[][] | null = null;
 let fetchFailed = false;
 let denseHandles: DenseHandles | null = null;
 
@@ -102,42 +110,53 @@ function heroMessage(text: string) {
 
 function renderHero() {
   if (fetchFailed) return heroMessage(FETCH_FAIL);
-  if (!matrix) return heroMessage(LOADING);
-  denseHandles = renderDense(heroSvg, VIEWS, matrix, selected, MAX_NET, toggle, deselect, tip, isMobile());
+  const mx = mode === 'per1k' ? matrixRate : matrix;
+  if (!mx) return heroMessage(LOADING);
+  const maxNet = mode === 'per1k' ? MAX_NET_RATE : MAX_NET;
+  denseHandles = renderDense(heroSvg, VIEWS, mx, selected, maxNet, toggle, deselect, tip, isMobile(), mode);
 }
 
 // ── panel ──
 function renderPanel() {
   if (selected === null) {
-    panel.innerHTML = nationalPanelHTML();
+    panel.innerHTML = nationalPanelHTML(mode);
     return;
   }
   const m = VIEWS[selected];
   panel.innerHTML =
     `<div class="panelhead"><div class="metroname">${m.name} <span class="st">${m.st}</span></div>` +
     `<button class="reset" type="button"><span class="x">↺</span> National view</button></div>` +
-    metroPanelCoreHTML(m);
+    metroPanelCoreHTML(m, mode);
   panel.querySelector('.reset')?.addEventListener('click', deselect);
 }
 
 // ── frame head + live region ──
 function syncHead() {
+  const per = mode === 'per1k';
   if (selected === null) {
     scopeEl.textContent = 'All 30 metros';
     verdictEl.className = 'verdict';
     verdictEl.textContent = '';
-    hintEl.textContent = HERO_HINT_NATIONAL;
+    hintEl.textContent = per ? HERO_HINT_NATIONAL_RATE : HERO_HINT_NATIONAL;
   } else {
     const m = VIEWS[selected];
     scopeEl.innerHTML = `${m.name} <span class="st">${m.st}</span>`;
+    // sign is mode-independent, so the verdict reads the same either way (09 §2.3)
     verdictEl.className = 'verdict ' + (m.net >= 0 ? 'pos' : 'neg');
     verdictEl.textContent = verdictShort(m.net);
     hintEl.textContent = HERO_HINT_SELECTED;
   }
+  mapHintEl.textContent = per ? MAP_HINT_RATE : MAP_HINT;
+  if (rateNote) rateNote.hidden = !per;
+  for (const b of modeSwitch.querySelectorAll<HTMLButtonElement>('button')) {
+    const on = b.dataset.mode === mode;
+    b.setAttribute('aria-checked', String(on));
+    b.tabIndex = on ? 0 : -1;
+  }
 }
 
 function announce() {
-  live.textContent = selected === null ? liveNational() : liveMetro(VIEWS[selected]);
+  live.textContent = selected === null ? liveNational() : liveMetro(VIEWS[selected], mode);
 }
 
 // ── map ──
@@ -150,7 +169,8 @@ const mapHandles = buildMap(
   (i) => select(i),
   deselect,
   hoverMetro,
-  tip
+  tip,
+  () => mode
 );
 
 function hoverMetro(i: number, on: boolean) {
@@ -180,15 +200,35 @@ function deselect() {
 function toggle(i: number) {
   selected === i ? deselect() : select(i);
 }
+/** Mode and selection are independent axes — neither resets the other (09 §4). */
+function setMode(next: Mode, focus = false) {
+  if (next === mode) return;
+  mode = next;
+  refresh();
+  if (focus) modeSwitch.querySelector<HTMLButtonElement>(`button[data-mode="${next}"]`)?.focus();
+}
 
 // ── controls ──
 pick.addEventListener('change', function () {
   this.value === '' ? deselect() : select(+this.value);
 });
 
+modeSwitch.addEventListener('click', (e) => {
+  const b = (e.target as Element).closest<HTMLButtonElement>('button[data-mode]');
+  if (b) setMode(b.dataset.mode as Mode);
+});
+// Roving arrow keys inside the group; the global handler below stands down while
+// focus is in here, so ←/→ switches mode instead of stepping the metro selection.
+modeSwitch.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  e.preventDefault();
+  setMode(mode === 'people' ? 'per1k' : 'people', true);
+});
+
 addEventListener('keydown', (e) => {
   const tag = (document.activeElement?.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (document.activeElement?.closest?.('.modeswitch')) return;
   if (e.key === 'Escape') {
     tip.hide();
     if (selected !== null) deselect();
@@ -221,12 +261,19 @@ fetch('/data/metro_pairs.json')
   .then((pairs: any[]) => {
     const n = VIEWS.length;
     const mx = Array.from({ length: n }, () => new Array(n).fill(0));
+    // Rate matrix: every directed flow over the population of where the movers left,
+    // so one ribbon is one honest quantity (09 §3.1). Built once, alongside the counts.
+    const mxRate = Array.from({ length: n }, () => new Array(n).fill(0));
     for (const p of pairs) {
       const i = CBSA_TO_INDEX.get(p.origin_cbsa);
       const j = CBSA_TO_INDEX.get(p.dest_cbsa);
-      if (i != null && j != null && i !== j) mx[i][j] += p.people;
+      if (i != null && j != null && i !== j) {
+        mx[i][j] += p.people;
+        mxRate[i][j] += (p.people / VIEWS[i].pop) * 1000;
+      }
     }
     matrix = mx;
+    matrixRate = mxRate;
     renderHero();
   })
   .catch(() => {
