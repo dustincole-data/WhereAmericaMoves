@@ -15,6 +15,9 @@ export interface Partner {
   net: number;
 }
 
+/** Figures read as raw counts, or per 1,000 residents (ticket 09). */
+export type Mode = 'people' | 'per1k';
+
 export interface MetroView {
   i: number; // ring order = METROS order (population desc)
   cbsa: string;
@@ -27,6 +30,12 @@ export interface MetroView {
   net: number;
   total_in: number;
   total_out: number;
+  pop: number; // POPESTIMATE2023 — the per-capita denominator (09 §2)
+  // Rates per 1,000 residents, unrounded; rounding is a display concern (09 §7).
+  in_rate: number;
+  out_rate: number;
+  net_rate: number;
+  churn_rate: number; // (in + out) / pop — drives dot size in rate mode
   agi_in: number | null;
   agi_out: number | null;
   rest_in: number; // rest_of_us_in_direct + _in_suppressed
@@ -60,6 +69,11 @@ export const VIEWS: MetroView[] = METROS.map((m, i) => {
     net: s.net,
     total_in: s.total_in,
     total_out: s.total_out,
+    pop: s.population,
+    in_rate: (s.total_in / s.population) * 1000,
+    out_rate: (s.total_out / s.population) * 1000,
+    net_rate: (s.net / s.population) * 1000, // from raw net, never from rounded parts
+    churn_rate: ((s.total_in + s.total_out) / s.population) * 1000,
     agi_in: s.agi_avg_in_dollars,
     agi_out: s.agi_avg_out_dollars,
     rest_in: s.rest_of_us_in_direct + s.rest_of_us_in_suppressed,
@@ -71,11 +85,17 @@ export const VIEWS: MetroView[] = METROS.map((m, i) => {
 
 export const CBSA_TO_INDEX = new Map<string, number>(VIEWS.map((v) => [v.cbsa, v.i]));
 export const MAX_NET = Math.max(1, ...VIEWS.map((v) => Math.abs(v.net)));
+/** Rate mode needs its own diverging domain, or the ring renders near-monochrome (09 §2.2). */
+export const MAX_NET_RATE = Math.max(1e-9, ...VIEWS.map((v) => Math.abs(v.net_rate)));
 export const VIEW_BY_SLUG = new Map<string, MetroView>(VIEWS.map((v) => [v.slug, v]));
 
-/** national tallies */
+/** national tallies. pop > 0 everywhere, so sign(net_rate) === sign(net) — the
+    destination/departure counts are mode-independent and stated once (09 §2.3). */
 export const N_DEST = VIEWS.filter((v) => v.net > 0).length;
 export const N_DEPART = VIEWS.filter((v) => v.net < 0).length;
 export const N_EVEN = VIEWS.filter((v) => v.net === 0).length;
 export const TOP_GAIN = VIEWS.reduce((a, b) => (b.net > a.net ? b : a));
 export const TOP_LOSS = VIEWS.reduce((a, b) => (b.net < a.net ? b : a));
+/** the extremes flip under normalisation — the national panel must follow (09 §5.2) */
+export const TOP_GAIN_RATE = VIEWS.reduce((a, b) => (b.net_rate > a.net_rate ? b : a));
+export const TOP_LOSS_RATE = VIEWS.reduce((a, b) => (b.net_rate < a.net_rate ? b : a));

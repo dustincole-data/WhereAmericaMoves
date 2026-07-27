@@ -10,6 +10,13 @@ export const fmtInt = (n: number): string => Math.round(n).toLocaleString('en-US
 export const fmtSigned = (n: number): string =>
   (n >= 0 ? '+' : MINUS) + Math.abs(Math.round(n)).toLocaleString('en-US');
 
+/** sign + one decimal, per 1,000 residents; U+2212 for negatives (09 §7). One decimal
+    is what ~2 significant digits of migration rate honestly supports. */
+export const fmtRate = (n: number): string => (n >= 0 ? '+' : MINUS) + Math.abs(n).toFixed(1);
+
+/** unsigned rate, one decimal */
+export const fmtRateAbs = (n: number): string => Math.abs(n).toFixed(1);
+
 /** $ + comma, rounded to nearest $100 (avoids false precision on an aggregate avg) */
 export const fmtAgi = (n: number): string => '$' + (Math.round(n / 100) * 100).toLocaleString('en-US');
 
