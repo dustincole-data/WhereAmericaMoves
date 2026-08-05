@@ -99,10 +99,12 @@ const mapData = METROS.map((m, i) => {
       </div>
 
       <p class="register">{REGISTER_CLAIM.text}</p>
-      <figure class="claimfig">
-        <div class="claimplate" set:html={claimSvg} />
-        <figcaption class="claimcap" style={`--cut:${(cut * 100).toFixed(3)}%`}>
+      <figure class="claimfig" style={`--cut:${(cut * 100).toFixed(3)}%`}>
+        <div class="claimwrap">
+          <div class="claimplate" set:html={claimSvg} />
           <span class="cap-left">{BAR_DISCLOSED.text}</span>
+        </div>
+        <figcaption class="claimcap">
           <span class="cap-right">
             <b class="tnum">{BAR_WITHHELD.text}</b>
             {BAR_WITHHELD_SUB.map((s) => <i>{s.text}</i>)}

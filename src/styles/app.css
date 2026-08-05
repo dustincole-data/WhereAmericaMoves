@@ -82,38 +82,40 @@
 .claimfig {
   margin: 0 0 3.5rem;
 }
+.claimwrap {
+  position: relative;
+}
 .claimplate svg {
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
 }
 
 /* The captions are HTML, positioned against the divider the plate emitted. This is why the
    plate ships as two files rather than one: a label that has to sit against the cut cannot
-   be placed over an image whose height changes with what was removed from it. */
+   be placed over an image whose height changes with what was removed from it. The disclosed
+   label goes back INSIDE the bar, which is where 09's own plate put it — without it the
+   register is a flat blue slab with a number floating beside it. */
+.cap-left {
+  position: absolute;
+  left: 1.1rem;
+  bottom: 22%;
+  max-width: calc(var(--cut) - 3rem);
+  color: #fff;
+  font-size: 0.95rem;
+}
 .claimcap {
   position: relative;
   display: block;
-  margin-top: 0.5rem;
   min-height: 4.5rem;
-}
-.cap-left {
-  position: absolute;
-  left: 0;
-  top: 0;
-  max-width: calc(var(--cut) - 1rem);
-  font-size: 0.9rem;
-  color: var(--muted);
 }
 .cap-right {
   position: absolute;
   left: var(--cut);
-  top: 0;
+  top: -0.9rem;
   padding-left: 0.9rem;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--rule);
 }
 .cap-right b {
   font-family: var(--font-mono);
@@ -134,6 +136,13 @@
 
 .fieldfig {
   margin: 0 0 4rem;
+}
+/* Full bleed. 09's route 2 draws the crowd cropped by the plate edge rather than floating
+   in a moat, and the wrap's gutter was putting it back in one. */
+.fieldfig .field {
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
 }
 .field svg {
   display: block;
@@ -420,6 +429,26 @@
 /* ── phone ──────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
+  /* The kicker's separator dangles once the source line wraps, so the two parts stack and
+     the dot goes. */
+  .kicker {
+    display: block;
+    padding-bottom: 1.75rem;
+  }
+  .kicker .sep {
+    display: none;
+  }
+  .kicker .src {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 11px;
+  }
+  /* A three-line all-caps mono register shouts louder than the sentence above it. */
+  .register {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
   /* At 390px the 1240-unit field renders its 8px metro labels at ~2.5px. The plate is still
      the hero and still legible AS A CROWD, which is what it encodes; the labels are
      landmarks and they go. This is the layout problem the geometry-only plate bought, in
@@ -430,14 +459,15 @@
   .claimcap {
     min-height: 0;
   }
+  /* The label does not fit inside a 250px bar, so on a phone both captions stack under it. */
   .cap-left,
   .cap-right {
     position: static;
     max-width: none;
     padding-left: 0;
-    border-left: 0;
     display: block;
-    margin-bottom: 0.6rem;
+    margin: 0.6rem 0 0;
+    color: var(--muted);
   }
   .cap-right b,
   .cap-right i {

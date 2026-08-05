@@ -89,6 +89,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* the field bleeds to the viewport edge; without this its 100vw picks up the scrollbar */
+  overflow-x: hidden;
 }
 
 body {
