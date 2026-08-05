@@ -1,106 +1,79 @@
 ---
-// Per-metro share page (08 §8) — the metro pre-selected, standalone. Hero = focus
-// chord (ticket 04 A); readout/rest/income server-rendered (no client fetch);
-// same Stefaner header + methodology footer. getStaticPaths over the 30.
+// One page per metro, thirty of them, at the URLs v1 published — they are indexed, and 06
+// wants them read.
+//
+// 05's finding is what keeps this page legal: naming is ASSERTION, not election. These
+// thirty pages are byte-identical readouts published with nobody clicking, so an
+// author-versus-reader rule would be flipped by a build flag — and a rule a build flag can
+// flip is not a rule. A readout of a cell's own value names nothing, whoever elected it.
+//
+// The partner set is the hero's own crowd, filtered to this metro's marks: the same
+// geometry, the same cells, one encoding. No rank, no "trades most with", no top-N cut —
+// the illegality of a top-N lives in the SET, not in any one label, which is exactly the
+// judgment code cannot make.
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
-import Legend from '../../components/Legend.astro';
 import Footer from '../../components/Footer.astro';
-import { VIEWS } from '../../lib/data';
-import type { MetroView } from '../../lib/data';
-import {
-  metroPanelCoreHTML,
-  pageMetroTitle,
-  ogMetroTitle,
-  metroDesc,
-  HERO_HINT_FOCUS_CHORD,
-} from '../../lib/copy';
-import { verdictShort } from '../../lib/format';
+import MetroReadout from '../../components/MetroReadout.astro';
+import { METROS } from '../../lib/metros';
+import { assertPlate } from '../../lib/package';
+import { metroCopy } from '../../copy';
+import { say } from '../../copy/record';
+
+import fieldSvgRaw from '../../assets/09-field.svg?raw';
 
 export function getStaticPaths() {
-  return VIEWS.map((v) => ({ params: { slug: v.slug }, props: { m: v } }));
+  return METROS.map((m) => ({ params: { slug: m.slug }, props: { cbsa: m.cbsa } }));
 }
 
-const { m } = Astro.props as { m: MetroView };
-const v = m.net >= 0 ? 'pos' : 'neg';
+const { cbsa } = Astro.props as { cbsa: string };
+const m = metroCopy(cbsa);
+const fieldSvg = assertPlate(fieldSvgRaw, '09-field.svg');
+
 const site = Astro.site!;
 const canonical = new URL(`/metro/${m.slug}`, site).href;
 const ogImage = new URL(`/og/${m.slug}.png`, site).href;
-const heroAria = `${m.name} focus chord — its top partner metros, sized by people exchanged and coloured by net direction with that partner.`;
-const topPartners = m.partners.slice(0, 6);
+
+const back = say('Every metro, and the record they come from', 'apparatus');
 ---
 
 <Layout
-  title={pageMetroTitle(m)}
-  description={metroDesc(m)}
-  ogTitle={ogMetroTitle(m)}
-  ogDesc={metroDesc(m)}
+  title={m.title}
+  description={m.desc}
+  ogTitle={m.ogTitle}
+  ogDesc={m.desc}
   ogImage={ogImage}
   canonical={canonical}
 >
-  <div class="wrap">
+  <div class="wrap metropage">
     <Header />
 
-    <div class="share-links">
-      <a class="all" href="/">See all 30 metros →</a>
-      <span class="hint" style="margin:0"
-        >{m.name} {m.st} · <span class={'verdict ' + v} style="font-style:italic">{verdictShort(m.net)}</span></span
-      >
-    </div>
+    <MetroReadout m={m} heading="h1" />
 
-    <div class="sharegrid">
-      <div class="card chordcard">
-        <div class="chordhead">
-          <div class="scope">{m.name} <span class="st">{m.st}</span></div>
-        </div>
-        <svg id="hero" data-slug={m.slug} viewBox="0 0 520 500" role="img" aria-label={heroAria}></svg>
-        <div class="hint">{HERO_HINT_FOCUS_CHORD}</div>
-      </div>
+    <figure class="fieldfig focusfig">
+      <div class="field focused" data-focus={m.cbsa} role="img" aria-label={m.partners.text} set:html={fieldSvg} />
+      <figcaption class="legend">
+        <p>{m.partners.text}</p>
+      </figcaption>
+    </figure>
 
-      <div class="card panel">
-        <div class="panelhead">
-          <div class="metroname">{m.name} <span class="st">{m.st}</span></div>
-        </div>
-        <Fragment set:html={metroPanelCoreHTML(m)} />
-        {
-          topPartners.length > 0 && (
-            <div class="partners-line">
-              <span>Trades most with: </span>
-              {topPartners.map((p, i) => (
-                <span>{i > 0 ? ' · ' : ''}<a href={`/metro/${p.slug}`}>{p.name}</a></span>
-              ))}
-            </div>
-          )
-        }
-      </div>
-    </div>
+    <p class="backlink">
+      <a href={`/#${m.cbsa}`}>{back.text}</a>
+    </p>
 
-    <Legend />
     <Footer />
   </div>
 
   <script>
-    import '../../lib/share.ts';
+    // The one line of client work on this page: light the marks this metro is an end of.
+    // The plate ships with data-origin / data-dest on every mark, so the filter is a
+    // querySelectorAll over geometry that is already here.
+    const f = document.querySelector<HTMLElement>('.field[data-focus]');
+    const cbsa = f?.dataset.focus;
+    if (f && cbsa) {
+      f.querySelectorAll(`[data-dest="${cbsa}"], [data-origin="${cbsa}"], [data-metro="${cbsa}"]`).forEach((n) =>
+        n.classList.add('lit')
+      );
+    }
   </script>
 </Layout>
-
-<style>
-  .sharegrid {
-    display: grid;
-    gap: 22px 26px;
-    align-items: start;
-    grid-template-columns: minmax(0, 1fr) var(--rail-w);
-    margin-bottom: 22px;
-  }
-  .legendcard {
-    max-width: var(--rail-w);
-  }
-  @media (max-width: 780px) {
-    .sharegrid {
-      grid-template-columns: 1fr;
-    }
-    .legendcard {
-      max-width: none;
-    }
-  }
-</style>

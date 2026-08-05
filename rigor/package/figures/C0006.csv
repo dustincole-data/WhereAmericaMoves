@@ -1,0 +1,8 @@
+# claim: C0006
+# ledger_entry: L0020
+# result_digest: 77c52f3feed5acdd119b1f8449d5ccc2d39be94bd0314d5b7302f36e20b6cea9
+# claimed_cell: all
+# specification: {"filter": null, "grouping": [], "metric": "net_positive", "transform": null, "unit_of_analysis": "the top-metro set as a whole", "weights": null, "window": null}
+# this is the median specification's own result, exported whole — not a top-k, not a re-aggregation, and not the clean frame
+unit,value,claimed
+all,12.0,True

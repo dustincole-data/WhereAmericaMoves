@@ -1,0 +1,8 @@
+# claim: C0005
+# ledger_entry: L0019
+# result_digest: a2ed3656a8e5959df533ad992cae4bdcd1d63f866670e364a233296e23fdd1a9
+# claimed_cell: all
+# specification: {"filter": "origin_top_metro.notna() and dest_top_metro.notna() and intra_top_metro == False", "grouping": [], "metric": "people", "transform": null, "unit_of_analysis": "the top-metro set as a whole", "weights": null, "window": null}
+# this is the median specification's own result, exported whole — not a top-k, not a re-aggregation, and not the clean frame
+unit,value,claimed
+all,1555397.0,True

@@ -3,11 +3,21 @@ dist/
 .astro/
 .vercel/
 
-# Data: gitignored + CI-generated (Namesake pattern)
+# v1's downloaded IRS files. v2 fetches nothing, so this is a local leftover — but it is
+# 9MB of source data and it must not follow the vendored package into git.
 data/raw/
+
+# Generated at build, never committed. `public/data/` is the explorer's browser payload,
+# written out of the vendored bytes; `.scan/` is the copy ledger and the OG SVG dump.
 src/data/
 public/data/
 public/og/
+.scan/
+
+# The vendored Rigor package is COMMITTED, against every instinct in this file. CI cannot
+# regenerate a package whose engine is not here — and with it committed, v2 is reproducible
+# from this repo alone, where v1 fetched irs.gov at build time. Read-only: zero edits, ever.
+!rigor/
 
 # Local build references — never ship
 .scratch/

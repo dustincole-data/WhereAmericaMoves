@@ -1,0 +1,75 @@
+---
+// One metro's record. Rendered thirty times into the explorer (hidden but present, so
+// every string is in dist for the scan to read and the client constructs no copy at all)
+// and once on each /metro/<slug> page.
+//
+// Three things are absent on purpose:
+//   • No verdict word. `not_claimable` (D0019) says which metros are the net destinations
+//     is not claimable, so the sign is printed as a number and never named. v1 said
+//     "a net departure" and "losing people" on thirty pages.
+//   • No sums. v1 printed `rest_in = direct + suppressed` and `rest_sup_total = in + out`.
+//     A sum of two cells is a SPOKEN aggregate, which the contract says needs a claim or a
+//     figure. Every number here is one cell of `metro_totals`, printed as itself.
+//   • No income. v2 carries none: the subject is the record, and earnings are a fact about
+//     the movement.
+//
+// The withheld extent is DRAWN, never printed — a share is a ratio of two cells. This bar
+// is the reason the explorer survived 06 at all: the residual is a few per cent of one
+// metro and nearly all of another, so thirty readouts are thirty confrontations with the
+// headline, and a readout that hid its own withheld share would contradict the piece on
+// every one of its thirty pages.
+import type { MetroCopy } from '../copy';
+
+interface Props {
+  m: MetroCopy;
+  heading?: 'h1' | 'h2';
+}
+const { m, heading = 'h2' } = Astro.props;
+const Heading = heading;
+const pct = (x: number) => `${(x * 100).toFixed(3)}%`;
+---
+
+<article class="readout" data-metro-panel={m.cbsa}>
+  <header class="rhead">
+    <Heading>{m.name.text}<span class="st">{m.state.text}</span></Heading>
+    <p class="unit">{m.unit.text}</p>
+  </header>
+
+  <div class="cells">
+    <div class="cell">
+      <div class="lab">{m.labelIn.text}</div>
+      <div class="fig tnum">{m.figIn.text}</div>
+    </div>
+    <div class="cell">
+      <div class="lab">{m.labelOut.text}</div>
+      <div class="fig tnum">{m.figOut.text}</div>
+    </div>
+    <div class="cell">
+      <div class="lab">{m.labelNet.text}</div>
+      <div class="fig tnum">{m.figNet.text}</div>
+    </div>
+  </div>
+
+  <div class="rest">
+    <div class="rrow">
+      <span class="rlab">{m.restHead.text}</span>
+      <span class="rfig tnum">{m.restIn.text}</span>
+      <span class="rsep">in</span>
+      <span class="rfig tnum">{m.restOut.text}</span>
+      <span class="rsep">out</span>
+    </div>
+    <div class="rrow">
+      <span class="rlab">{m.supHead.text}</span>
+      <span class="rfig tnum">{m.supIn.text}</span>
+      <span class="rsep">in</span>
+      <span class="rfig tnum">{m.supOut.text}</span>
+      <span class="rsep">out</span>
+    </div>
+  </div>
+
+  <div class="extent" role="img" aria-label={m.supNote.text}>
+    <div class="ex-direct" style={`width:${pct(1 - m.supExtent)}`}></div>
+    <div class="ex-sup" style={`width:${pct(m.supExtent)}`}></div>
+  </div>
+  <p class="note">{m.supNote.text}</p>
+</article>

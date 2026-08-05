@@ -1,707 +1,446 @@
-/* Where America Moves — component styles (ported from the ticket-05 prototype,
-   the pixel reference). Tokens live in tokens.css. */
+/* Where America Moves v2.
+ *
+ * Written fresh. v1's 707 lines were the chord card, the rail, the dumbbell and the mode
+ * switch — all deleted — and keeping them would have meant pruning around a shape that no
+ * longer exists.
+ *
+ * One column, one route. The two plates are wide and everything else sits on a reading
+ * measure, because the piece is an argument with two pictures in it rather than a dashboard.
+ */
 
 .wrap {
-  max-width: 1320px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 40px 88px;
-}
-a {
-  color: inherit;
+  padding: 0 var(--gutter) 4rem;
 }
 
-/* visually hidden (keyboard/SR only) */
-.vh {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
+/* ── kicker ─────────────────────────────────────────────────────────────────── */
 
-/* ── Stefaner frame: header ── */
-header .kicker {
+.kicker {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 2rem 0 2.5rem;
   font-size: 12px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
+}
+.kicker a {
+  color: var(--ink);
+  text-decoration: none;
   font-weight: 600;
 }
-header .kicker .yr {
-  color: var(--ink-2);
+.kicker a:hover {
+  text-decoration: underline;
 }
-header h1 {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 1.06;
-  margin: 0.28em 0 0.18em;
-  letter-spacing: -0.01em;
-}
-header .dek {
-  font-family: var(--font-serif);
-  font-size: 18px;
-  line-height: 1.45;
-  color: var(--ink-2);
-  max-width: 64ch;
-  font-weight: 400;
-}
-header .dek em {
-  font-style: italic;
-}
-.rule {
-  height: 1px;
-  background: var(--rule);
-  border: 0;
-  margin: 20px 0;
+.kicker .sep {
+  color: var(--rule);
 }
 
-/* ── composition: chord-dominant + right rail ── */
-.stage {
-  display: grid;
-  gap: 22px 26px;
-  align-items: start;
-  grid-template-columns: minmax(520px, 1fr) var(--rail-w);
-  grid-template-areas:
-    'chord map'
-    'chord panel'
-    'chord legend'
-    'chord blank';
+/* ── the plate ──────────────────────────────────────────────────────────────── */
+
+.plate h1 {
+  margin: 0 0 1.25rem;
+  font-size: clamp(2rem, 5.2vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.028em;
+  max-width: 22ch;
 }
-.panel-title {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+
+.standfirst {
+  max-width: var(--measure);
+  margin: 0 0 3rem;
+}
+.standfirst p {
+  margin: 0 0 0.6rem;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+.standfirst p:first-child {
+  color: var(--ink);
+}
+.standfirst p:last-child {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.register {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--muted);
-  font-weight: 600;
-  margin: 0 0 8px;
 }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  position: relative;
-  box-shadow: var(--shadow-card);
+
+/* ── the claim register ─────────────────────────────────────────────────────── */
+
+.claimfig {
+  margin: 0 0 3.5rem;
 }
-.chordcard {
-  grid-area: chord;
-  padding: 16px 16px 12px;
-  align-self: stretch;
-}
-.mapcard {
-  grid-area: map;
-  padding: 14px 14px 10px;
-}
-.panel {
-  grid-area: panel;
-  padding: 15px 16px 16px;
-}
-.legendcard {
-  grid-area: legend;
-  padding: 14px 16px 16px;
-}
-svg {
+.claimplate svg {
   display: block;
   width: 100%;
   height: auto;
   overflow: visible;
 }
-.hint {
-  font-size: 12px;
-  color: var(--muted);
-  margin: 8px 2px 2px;
-  line-height: 1.4;
-}
 
-/* chord card head */
-.chordhead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 2px;
-}
-.chordhead .scope {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 19px;
-  letter-spacing: -0.01em;
-}
-.chordhead .scope .st {
-  color: var(--muted);
-  font-weight: 400;
-  font-size: 15px;
-}
-.chordhead .headright {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-.chordhead .verdict {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 14px;
-}
-
-/* per-capita mode switch (09 §4) — same visual weight as #metroPick */
-.modeswitch {
-  display: inline-flex;
-  background: var(--ground);
-  border: 1px solid var(--rule);
-  border-radius: 7px;
-  padding: 2px;
-  gap: 2px;
-  flex: none;
-}
-.modeswitch button {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  line-height: 1.2;
-  color: var(--ink-2);
-  background: none;
-  border: 0;
-  border-radius: 5px;
-  padding: 3px 8px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.modeswitch button:hover {
-  color: var(--ink);
-}
-.modeswitch button[aria-checked='true'] {
-  background: var(--ink);
-  color: var(--surface);
-}
-.modeswitch button:focus-visible {
-  outline: 2px solid var(--in-core);
-  outline-offset: 1px;
-}
-.modeswitch .narrow {
-  display: none;
-}
-.verdict.pos {
-  color: var(--in-core);
-}
-.verdict.neg {
-  color: var(--out-core);
-}
-.chordloading {
-  font-family: var(--font-serif);
-  color: var(--muted);
-  text-align: center;
-  padding: 120px 0;
-  font-size: 16px;
-}
-
-/* map selector */
-.maptop {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.selectwrap {
+/* The captions are HTML, positioned against the divider the plate emitted. This is why the
+   plate ships as two files rather than one: a label that has to sit against the cut cannot
+   be placed over an image whose height changes with what was removed from it. */
+.claimcap {
   position: relative;
+  display: block;
+  margin-top: 0.5rem;
+  min-height: 4.5rem;
 }
-#metroPick {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  color: var(--ink-2);
-  background: var(--ground);
-  border: 1px solid var(--rule);
-  border-radius: 7px;
-  padding: 3px 6px;
-  max-width: 150px;
+.cap-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: calc(var(--cut) - 1rem);
+  font-size: 0.9rem;
+  color: var(--muted);
 }
-
-/* panel */
-.panelhead {
+.cap-right {
+  position: absolute;
+  left: var(--cut);
+  top: 0;
+  padding-left: 0.9rem;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 9px;
+  flex-direction: column;
+  border-left: 1px solid var(--rule);
 }
-.panelhead .metroname {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 21px;
-  letter-spacing: -0.01em;
+.cap-right b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
-.panelhead .metroname .st {
+.cap-right i {
+  font-style: normal;
+  font-size: 0.85rem;
   color: var(--muted);
-  font-weight: 400;
-  font-size: 15px;
-}
-.reset {
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  color: var(--ink-2);
-  background: var(--ground);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 3px 11px;
-  cursor: pointer;
-  white-space: nowrap;
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  text-decoration: none;
-}
-.reset:hover {
-  border-color: var(--muted);
-  color: var(--ink);
-}
-.reset .x {
-  font-family: var(--font-mono);
-  opacity: 0.6;
-}
-
-/* national summary */
-.nat .lead {
-  font-family: var(--font-serif);
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--ink);
-  margin: 0 0 12px;
-}
-.nat .lead b {
-  font-weight: 600;
-}
-.nat .lead .pos {
-  color: var(--in-core);
-}
-.nat .lead .neg {
-  color: var(--out-core);
-}
-.ext {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--rule);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.ext .c {
-  background: var(--surface);
-  padding: 10px 12px;
-}
-.ext .c .lab {
-  font-size: 10px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
-}
-.ext .c .m {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 15px;
-  margin-top: 3px;
-}
-.ext .c .f {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  margin-top: 1px;
-}
-.ext .c .f.pos {
-  color: var(--in-core);
-}
-.ext .c .f.neg {
-  color: var(--out-core);
-}
-.nat .cue {
-  font-size: 12.5px;
-  color: var(--muted);
-  margin-top: 11px;
-  line-height: 1.45;
-}
-.nat .cue b {
-  color: var(--ink-2);
-  font-weight: 600;
-}
-
-/* metro readout */
-.readout {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--rule);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.cell {
-  background: var(--surface);
-  padding: 11px 12px;
-}
-.cell .lab {
-  font-size: 10px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
-}
-.cell .fig {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 20px;
-  font-weight: 500;
-  margin-top: 3px;
-  letter-spacing: -0.01em;
-}
-.cell .sub {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-2);
-  margin-top: 2px;
-}
-.fig.pos,
-.sub.pos {
-  color: var(--in-core);
-}
-.fig.neg,
-.sub.neg {
-  color: var(--out-core);
-}
-.restline {
-  font-size: 12px;
-  color: var(--ink-2);
-  margin-top: 10px;
-  line-height: 1.45;
-  background: var(--ground);
-  border: 1px solid var(--rule);
-  border-radius: 9px;
-  padding: 9px 11px;
-}
-.restline .mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-.restline b {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-/* income dumbbell */
-.income {
-  margin-top: 12px;
-  background: var(--ground);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  padding: 11px 13px;
-}
-.income .hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.income .hd .t {
-  font-size: 10.5px;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
-}
-.income .hd .note {
-  font-size: 10.5px;
-  color: var(--muted);
-}
-.income .guard {
-  font-size: 12.5px;
-  color: var(--ink-2);
-  line-height: 1.45;
-}
-.db {
-  margin-top: 9px;
-  position: relative;
-  height: 34px;
-}
-.db .track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 16px;
-  height: 2px;
-  background: var(--rule);
-}
-.db .end {
-  position: absolute;
-  top: 9px;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  transform: translateX(-50%);
-  border: 2px solid var(--surface);
-}
-.db .end.in {
-  background: var(--in-core);
-}
-.db .end.out {
-  background: var(--out-core);
-}
-.db .cap {
-  position: absolute;
-  top: -1px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-.db .cap.in {
-  color: var(--in-core);
-}
-.db .cap.out {
-  color: var(--out-core);
-}
-/* the merged readout, when the two captions would have overprinted */
-.db .cap.both {
-  left: 0;
-  right: 0;
-  transform: none;
-  text-align: center;
-  color: var(--muted);
-}
-.db .cap.both .in {
-  color: var(--in-core);
-}
-.db .cap.both .out {
-  color: var(--out-core);
-}
-.db .axmin,
-.db .axmax {
-  position: absolute;
-  bottom: -2px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--muted);
-}
-.db .axmin {
-  left: 0;
-}
-.db .axmax {
-  right: 0;
-}
-
-/* legend-as-art (Lupi) */
-.legendcard .hand {
-  font-family: var(--font-hand);
-  font-size: 22px;
-  color: var(--ink-2);
-  line-height: 1;
-  transform: rotate(-1.5deg);
-  display: inline-block;
-}
-.legendcard .row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 9px;
-}
-.legendcard .row .swatch {
-  height: 8px;
-  border-radius: 6px;
-  flex: 0 0 auto;
-}
-/* the gradient swatches are inline SVG, which the global `svg{width:100%}` rule
-   would otherwise stretch across the row — pinning them to the bar width keeps all
-   three labels on one left edge */
-.legendcard .row svg {
-  width: 112px;
-  flex: 0 0 auto;
-}
-.legendcard .row .lg {
-  font-size: 12px;
-  color: var(--ink-2);
-}
-.legendcard .row .lg b {
-  color: var(--ink);
-  font-weight: 600;
-}
-.legendcard .anno {
-  font-family: var(--font-hand);
-  font-size: 16px;
-  color: var(--muted);
-  position: absolute;
-  right: 16px;
-  top: 12px;
-  transform: rotate(2deg);
-}
-.legendcard .foot {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 10px;
   line-height: 1.4;
 }
 
-/* tooltip */
-.tip {
-  position: fixed;
-  pointer-events: none;
-  background: var(--ink);
-  color: var(--ground);
+/* ── the field ──────────────────────────────────────────────────────────────── */
+
+.fieldfig {
+  margin: 0 0 4rem;
+}
+.field svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.field text {
   font-family: var(--font-sans);
-  font-size: 12px;
-  line-height: 1.4;
-  padding: 8px 10px;
-  border-radius: 8px;
-  opacity: 0;
-  transition: opacity 0.1s;
-  max-width: 230px;
-  z-index: 60;
-  box-shadow: 0 6px 20px rgba(42, 37, 33, 0.22);
-}
-/* pinned by a tap — takes pointer events so its × (or a tap on it) can dismiss it */
-.tip.pinned {
-  /* the body stays transparent to taps so it can never eat the tap meant for a
-     metro underneath it; only the × is a target */
-  padding-right: 30px;
-}
-.tip.pinned .tipx {
-  pointer-events: auto;
-}
-.tip .tipx {
-  position: absolute;
-  top: 2px;
-  right: 3px;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ground);
-  opacity: 0.65;
-  font: inherit;
-  font-size: 17px;
-  line-height: 1;
-  cursor: pointer;
-}
-.tip .tt {
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-.tip .mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-.tip .in {
-  color: #8fd0ea;
-}
-.tip .out {
-  color: #f0b48f;
-}
-.tip .mut {
-  color: #c9bda9;
 }
 
-/* ── footer / methodology ── */
-.methodology {
-  margin-top: 30px;
-  border-top: 1px solid var(--rule);
-  padding-top: 16px;
-  max-width: 78ch;
+.field [data-origin],
+.field [data-metro] {
+  transition: opacity var(--isolate-ms) ease;
 }
-.methodology h2 {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.field.focused [data-origin],
+.field.focused [data-metro] {
+  opacity: var(--dim);
+}
+.field.focused [data-origin].lit,
+.field.focused [data-metro].lit {
+  opacity: 1;
+}
+
+.legend {
+  max-width: var(--measure);
+  margin-top: 1.25rem;
+}
+.legend p {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
   color: var(--muted);
-  font-weight: 600;
-  margin: 0 0 10px;
-}
-.methodology p {
-  font-size: 12.5px;
-  color: var(--ink-2);
   line-height: 1.55;
-  margin: 0 0 9px;
 }
-.methodology a {
-  color: var(--ink-2);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.legend .complement {
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin-bottom: 1rem;
 }
 
-/* share-page cross-links */
-.share-links {
+/* ── the beats ──────────────────────────────────────────────────────────────── */
+
+.beat {
+  max-width: var(--measure);
+  margin: 0 0 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule);
+}
+.beat h2 {
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.12;
+}
+.beat p {
+  margin: 0 0 0.85rem;
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+
+/* ── the explorer, subordinated ─────────────────────────────────────────────── */
+
+.explorer {
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule);
+  margin-bottom: 3.5rem;
+}
+.explorer h2 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.explorer .lead {
+  max-width: var(--measure);
+  margin: 0 0 1.75rem;
+  color: var(--ink-2);
+}
+
+.exgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+@media (max-width: 820px) {
+  .exgrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.selectwrap {
+  margin-bottom: 0.75rem;
+}
+#metroPick {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  max-width: 100%;
+}
+#map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+#map g.dot {
+  cursor: pointer;
+}
+.hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.expanel {
+  min-height: 18rem;
+}
+.atrest {
+  margin: 0;
+  padding: 1.25rem 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ── the metro readout ──────────────────────────────────────────────────────── */
+
+.readout {
+  border-top: 2px solid var(--ink);
+  padding-top: 1rem;
+}
+.rhead h1,
+.rhead h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 600;
+  letter-spacing: -0.024em;
+  line-height: 1.1;
+}
+.rhead .st {
+  margin-left: 0.6rem;
+  font-size: 0.75em;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.rhead .unit {
+  margin: 0.35rem 0 1.25rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cells {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.cells .lab {
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cells .fig {
+  font-size: clamp(1.15rem, 2.4vw, 1.65rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.rest {
+  border-top: 1px solid var(--rule);
+  padding-top: 0.85rem;
+  margin-bottom: 1.1rem;
+}
+.rrow {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 22px;
   align-items: baseline;
-  margin: 4px 0 2px;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
 }
-.share-links .all {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--in-core);
-  text-decoration: none;
-}
-.share-links .all:hover {
-  text-decoration: underline;
-}
-.partners-line {
-  font-size: 12.5px;
+.rrow .rlab {
+  flex: 1 1 100%;
   color: var(--muted);
-  margin-top: 12px;
-  line-height: 1.6;
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
-.partners-line a {
-  color: var(--ink-2);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.rrow .rfig {
+  font-weight: 500;
+}
+.rrow .rsep {
+  color: var(--muted);
+  margin-right: 0.7rem;
 }
 
-/* ── responsive ── */
-@media (max-width: 980px) {
-  .wrap {
-    padding: 26px 24px 80px;
-  }
-  .stage {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      'chord chord'
-      'map panel'
-      'legend legend';
-  }
-  header h1 {
-    font-size: 34px;
-  }
+/* The withheld extent: drawn, never printed. A share is a ratio of two cells, which the
+   contract makes a spoken aggregate needing its own claim. */
+.extent {
+  display: flex;
+  height: 10px;
+  margin-bottom: 0.7rem;
 }
+.ex-direct {
+  background: var(--claim);
+}
+.ex-sup {
+  border: 1px dashed var(--rule);
+  border-left: 2px solid var(--ink);
+}
+.readout .note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+/* ── metro page ─────────────────────────────────────────────────────────────── */
+
+.metropage .readout {
+  max-width: var(--measure);
+  margin-bottom: 3rem;
+}
+.backlink {
+  margin: 0 0 3rem;
+}
+.backlink a {
+  color: var(--ink);
+}
+
+/* ── the limits block ───────────────────────────────────────────────────────── */
+
+.limits {
+  border-top: 1px solid var(--rule);
+  padding-top: 2.5rem;
+  max-width: var(--measure);
+}
+.limits h2 {
+  margin: 0 0 1.75rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.limit {
+  margin-bottom: 2rem;
+}
+.limit h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.limit p,
+.method p {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+.method {
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 1.5rem;
+  color: var(--muted);
+}
+.method p {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.method a {
+  color: var(--muted);
+}
+.stamp {
+  font-family: var(--font-mono);
+  font-size: 0.78rem !important;
+  letter-spacing: 0.01em;
+}
+
+/* ── phone ──────────────────────────────────────────────────────────────────── */
+
 @media (max-width: 640px) {
-  .wrap {
-    padding: 22px 16px 72px;
-  }
-  .stage {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'map'
-      'chord'
-      'panel'
-      'legend';
-    gap: 16px;
-  }
-  header h1 {
-    font-size: 28px;
-  }
-  header .dek {
-    font-size: 16px;
-  }
-  .chordhead .scope {
-    font-size: 17px;
-  }
-  .modeswitch .wide {
+  /* At 390px the 1240-unit field renders its 8px metro labels at ~2.5px. The plate is still
+     the hero and still legible AS A CROWD, which is what it encodes; the labels are
+     landmarks and they go. This is the layout problem the geometry-only plate bought, in
+     exchange for a headline that is readable at all. */
+  .field text {
     display: none;
   }
-  .modeswitch .narrow {
-    display: inline;
+  .claimcap {
+    min-height: 0;
+  }
+  .cap-left,
+  .cap-right {
+    position: static;
+    max-width: none;
+    padding-left: 0;
+    border-left: 0;
+    display: block;
+    margin-bottom: 0.6rem;
+  }
+  .cap-right b,
+  .cap-right i {
+    display: block;
   }
 }

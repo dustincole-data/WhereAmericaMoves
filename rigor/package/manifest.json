@@ -1,0 +1,757 @@
+{
+  "accepted": {},
+  "cells": {
+    "confirmation": {
+      "cells": 15939,
+      "estimands": [
+        "inter_metro_exchange_people",
+        "net_destination_metro_count",
+        "net_domestic_migration_people",
+        "total_domestic_movers_people"
+      ],
+      "specifications": 11
+    },
+    "search": {
+      "cells": 12695,
+      "estimands": [
+        "inter_metro_exchange_people",
+        "net_destination_metro_count",
+        "net_domestic_migration_people",
+        "total_domestic_movers_people"
+      ],
+      "specifications": 13
+    },
+    "whole_ledger": {
+      "cells": 28634,
+      "estimands": [
+        "inter_metro_exchange_people",
+        "net_destination_metro_count",
+        "net_domestic_migration_people",
+        "total_domestic_movers_people"
+      ],
+      "specifications": 25
+    }
+  },
+  "claim_floor": {
+    "dollars_thousands": 50000,
+    "people": 2000,
+    "returns": 1000
+  },
+  "claim_floor_hash": "99ca7abe04f150af1ca8ab743e4d20f5dcef06dff47728d51dea15428edda845",
+  "claims": [
+    {
+      "claim_hash": "sha256:712a23e125360071a4f48c59a0731c2ac63464b41c84f59e54aac0eccba193f1",
+      "confirmed_against": "the full data",
+      "confound": null,
+      "curve": {
+        "defensible_count": 3,
+        "excluded_count": 1,
+        "median_specification": "L0008",
+        "spread": {
+          "max": 15070815.0,
+          "median": 14900349.0,
+          "min": 14898058.0,
+          "ratio_max_to_median": 1.0114
+        },
+        "stability": {
+          "agreeing": 3,
+          "basis": "sign agreement with the median specification",
+          "of": 3,
+          "share": 1.0,
+          "target": 1
+        }
+      },
+      "denominator": null,
+      "disclosure": [],
+      "estimand": "total_domestic_movers_people",
+      "figure": {
+        "cells_flagged": 1,
+        "claim": "C0003",
+        "claimed_cell": "all",
+        "ledger_entry": "L0008",
+        "path": "figures/C0003.csv",
+        "rows": 1,
+        "sha256": "09f1df5ca9f69b4c3f00e34d8ff298e26e06682ca7b7ff1688452e39febfff97"
+      },
+      "id": "C0003",
+      "kind": "descriptive",
+      "ledger_entry": "L0008",
+      "limitations": [
+        "counts tax filers and their dependents, not residents: non-filers never appear in the numerator",
+        "movement below the publisher's disclosure floor is included via the published totals but cannot be attributed to a specific pair of counties",
+        "single year-pair: no holdout period exists"
+      ],
+      "multiplicity": false,
+      "named_unit": null,
+      "numerator": "out_total_people",
+      "receipts": {
+        "claim": "../claims/C0003/claim.json",
+        "confirmation": "../claims/C0003/confirm.json",
+        "curve": "../claims/C0003/curve.json"
+      },
+      "register": {
+        "unlock": null,
+        "value": "descriptive"
+      },
+      "result_digest": "93369f1839c989dcb3ff90e6b39468cae9c645e5ecc388a5d46ce67091f37d54",
+      "scope": "population",
+      "specification": {
+        "filter": null,
+        "grouping": [],
+        "metric": "out_total_people",
+        "transform": null,
+        "unit_of_analysis": "the national filing population",
+        "weights": null,
+        "window": null
+      },
+      "text": "14,900,349 people moved between U.S. counties between tax years 2022 and 2023.",
+      "uncertainty": {
+        "basis": "administrative near-census. The published-total route and the disclosed-flow-plus-residual route were computed independently and agree exactly: 0 disagreements over 5,608 comparable unit-directions.",
+        "kind": "coverage, not sampling",
+        "statement": "There is no confidence interval, because this is not a sample: it is the publisher's own total over the complete population of filed returns. The uncertainty is coverage \u2014 non-filers appear in no figure and the data does not reveal how many there are \u2014 plus 4,086,883 people of withheld mass that this total includes and that cannot be attributed to any specific pair of counties."
+      },
+      "unit_family": "people",
+      "unit_label": "people (tax filers and their dependents)",
+      "universe": null,
+      "universe_size": null,
+      "value": 14900349.0
+    },
+    {
+      "claim_hash": "sha256:4333f1ade050c2737b0af666fd24abc90bb93bfe5fd0aa22e40403443cf4d155",
+      "confirmed_against": "the full data",
+      "confound": null,
+      "curve": {
+        "defensible_count": 1,
+        "excluded_count": 0,
+        "median_specification": "L0019",
+        "spread": {
+          "max": 1555397.0,
+          "median": 1555397.0,
+          "min": 1555397.0,
+          "ratio_max_to_median": 1.0
+        },
+        "stability": {
+          "agreeing": 1,
+          "basis": "sign agreement with the median specification",
+          "of": 1,
+          "share": 1.0,
+          "target": 1
+        }
+      },
+      "denominator": null,
+      "disclosure": [
+        {
+          "evidence": [
+            {
+              "id": "D0014",
+              "kind": "decision",
+              "text": "record the expected pairs with no disclosed flow as a quantified under-count and publish the number with any claim built on that relation set",
+              "why": "the prior written down before the run was ~0 absent pairs; the observed handful is small and consistent with the disclosure floor rather than with a join defect. The count is interpretable only because the prior predates it \u2014 which is the difference between this metric and a check that cannot fail."
+            }
+          ],
+          "statement": "7 of the 870 directed pairs among these 30 metros have no disclosed flow at all. Any published use of this number must state that count, and must say that an absent pair means withheld-or-absent and never zero."
+        }
+      ],
+      "estimand": "inter_metro_exchange_people",
+      "figure": {
+        "cells_flagged": 1,
+        "claim": "C0005",
+        "claimed_cell": "all",
+        "ledger_entry": "L0019",
+        "path": "figures/C0005.csv",
+        "rows": 1,
+        "sha256": "1d30b4559c411ddc751fbb06c5927231082f08cf0b3a6cec2fddf7551a4df5c1"
+      },
+      "id": "C0005",
+      "kind": "descriptive",
+      "ledger_entry": "L0019",
+      "limitations": [
+        "counts tax filers and their dependents, not residents: non-filers appear nowhere in it, and nothing in this source reveals how many are missing",
+        "disclosed-only by construction, and therefore a lower bound: there is no published total for a county pair, so the withheld mass cannot be added back and this figure cannot be corrected upward from this source",
+        "excludes each metro's own internal moves (D0013): a move between two counties of the same metro is not an exchange between metros, and including them answers a different question rather than the same one a different way",
+        "one defensible specification, and that is a fact about the source rather than a shortcut: the three axes that gave the national total its curve are all unavailable at pair level. There is one flow file (D0004/D0010) and the second file is the same measurement in another layout, a foreign endpoint is a reserved row and never a metro, and no published total exists for a pair. So this number rests on the decisions behind the relation frame, not on agreement across specifications.",
+        "single year-pair: no holdout period exists"
+      ],
+      "multiplicity": false,
+      "named_unit": null,
+      "numerator": "people",
+      "receipts": {
+        "claim": "../claims/C0005/claim.json",
+        "confirmation": "../claims/C0005/confirm.json",
+        "curve": "../claims/C0005/curve.json"
+      },
+      "register": {
+        "unlock": null,
+        "value": "descriptive"
+      },
+      "result_digest": "a2ed3656a8e5959df533ad992cae4bdcd1d63f866670e364a233296e23fdd1a9",
+      "scope": "population",
+      "specification": {
+        "filter": "origin_top_metro.notna() and dest_top_metro.notna() and intra_top_metro == False",
+        "grouping": [],
+        "metric": "people",
+        "transform": null,
+        "unit_of_analysis": "the top-metro set as a whole",
+        "weights": null,
+        "window": null
+      },
+      "text": "Between tax years 2022 and 2023, the 30 metros in this piece exchanged 1,555,397 people with one another.",
+      "uncertainty": {
+        "basis": "8,203 disclosed county-pair rows resolving to 863 of 870 directed metro pairs. The shipped WhereAmericaMoves build's own TypeScript pipeline reports the same total over the same 863 pairs from the same bytes by different code, which checks that the decisions were applied and not that they are right; the invariant flow_mass_within_source asserts that the flow table carries exactly the disclosed mass of the input it came from.",
+        "kind": "coverage and disclosure, not sampling",
+        "statement": "There is no confidence interval, because this is not a sample: it is a complete enumeration of every county-to-county flow the publisher disclosed between two different metros of this set. The uncertainty is one-sided and downward. A county pair below the publisher's 20-return floor is withheld by omitting its row, so its people are counted in each metro's unattributable residual and never in this total, and the true exchange among these 30 metros is larger than 1,555,397 by an amount this source cannot recover. 7 of the 870 directed metro pairs have no disclosed flow at all."
+      },
+      "unit_family": "people",
+      "unit_label": "people (tax filers and their dependents)",
+      "universe": null,
+      "universe_size": null,
+      "value": 1555397.0
+    },
+    {
+      "claim_hash": "sha256:b861d14151814946f5c9f248cca114e668085199ef27427e42c8141ad06ff879",
+      "confirmed_against": "the full data",
+      "confound": null,
+      "curve": {
+        "defensible_count": 3,
+        "excluded_count": 0,
+        "median_specification": "L0020",
+        "spread": {
+          "max": 13.0,
+          "median": 12.0,
+          "min": 12.0,
+          "ratio_max_to_median": 1.0833
+        },
+        "stability": {
+          "agreeing": 3,
+          "basis": "sign agreement with the median specification",
+          "of": 3,
+          "share": 1.0,
+          "target": 1
+        }
+      },
+      "denominator": null,
+      "disclosure": [],
+      "estimand": "net_destination_metro_count",
+      "figure": {
+        "cells_flagged": 1,
+        "claim": "C0006",
+        "claimed_cell": "all",
+        "ledger_entry": "L0020",
+        "path": "figures/C0006.csv",
+        "rows": 1,
+        "sha256": "55916005c8b5574f4d171b4b06ac94433fd7fa075ce5393a89ae451d00d32c7c"
+      },
+      "id": "C0006",
+      "kind": "descriptive",
+      "ledger_entry": "L0020",
+      "limitations": [
+        "counts tax filers and their dependents, not residents",
+        "the complement holds by subtraction, not by its own gate: 18 net departures is 30 \u2212 12, and it is true only because no metro's net is exactly zero in this vintage. A tie in a later vintage would break the 18 while leaving the 12 intact.",
+        "the specification that decides the sign is the one that carries each metro's withheld residual inside its published total. Dropping it and reading the disclosed flows alone gives 13.",
+        "the stability gate is close to vacuous for a count, and says so: it tests sign agreement with the median specification, and every count is positive, so it passes at 100% whatever the counts are. The gate that did the work here is the median specification \u2014 12, 12, 13.",
+        "names no metro, and cannot: which 12 is not claimed. No metro-level superlative or rank survives this dataset's stability gate, and the membership is the least stable part of this result.",
+        "single year-pair: no holdout period exists"
+      ],
+      "multiplicity": false,
+      "named_unit": null,
+      "numerator": "net_positive",
+      "receipts": {
+        "claim": "../claims/C0006/claim.json",
+        "confirmation": "../claims/C0006/confirm.json",
+        "curve": "../claims/C0006/curve.json"
+      },
+      "register": {
+        "unlock": null,
+        "value": "descriptive"
+      },
+      "result_digest": "77c52f3feed5acdd119b1f8449d5ccc2d39be94bd0314d5b7302f36e20b6cea9",
+      "scope": "aggregate",
+      "specification": {
+        "filter": null,
+        "grouping": [],
+        "metric": "net_positive",
+        "transform": null,
+        "unit_of_analysis": "the top-metro set as a whole",
+        "weights": null,
+        "window": null
+      },
+      "text": "Of the 30 metros in this piece, 12 are net destinations and 18 are net departures.",
+      "uncertainty": {
+        "basis": "Three specifications over the same 30 units: the publisher's Total-US totals in individuals (12), the same totals in returns rather than individuals (12), and the disclosed county-pair flows alone (13). No metro's net is exactly zero on any of the three, so in each specification the complement is the whole of the rest of the universe. Measuring in returns returns the same count of 12 by a different route and a different set: Riverside gains people and loses households, Seattle the reverse.",
+        "kind": "specification, not sampling",
+        "statement": "There is no confidence interval: this is a count over a complete, declared universe of 30 metros, not a sample. The uncertainty is analytic. Across the three defensible ways to decide the sign the count is 12, 12 and 13 \u2014 reading the disclosed county-pair flows alone, with each metro's withheld residual dropped rather than carried, moves one metro (Sacramento) onto the gaining side. The count is much steadier than the membership: 27 of the 30 metros hold one direction across all three specifications and 3 change side."
+      },
+      "unit_family": "count",
+      "unit_label": "of the 30 metros",
+      "universe": "top_metro_pairs",
+      "universe_size": 30,
+      "value": 12.0
+    }
+  ],
+  "config_hash": "6ded7a8c1e29a41fed92e0da6dac5de8326e2472a001cc56b5ae3319de9d9ba4",
+  "contract": {
+    "aggregation": "a mark may aggregate the cells it is made of; a spoken aggregate needs a claim or a figure.",
+    "apparatus": "coordinates, the selection set and other non-measured attributes are apparatus, not measurements, and fall outside this contract.",
+    "citation": "every rendered figure cites its source, a claim id or a frame id; only a claim id licenses naming.",
+    "default": "a measured quantity absent from this package may not be drawn. The default is no.",
+    "naming": "a cell may be drawn; only a claimed cell may be named. Naming is asserting a cell's relation to cells not shown: a superlative, a rank, a top-N cut, or a sort the reader reads as a ranking. A readout of a cell's own value names nothing, whoever elected it.",
+    "precedence": "manifest.json is the contract. Where a rendered file disagrees with it, the manifest wins.",
+    "scales": "apparatus never names, but no printed figure may equal an observed extreme of its own frame."
+  },
+  "engine_version": "0.1.0",
+  "frames": [
+    {
+      "clean_frame": "flows",
+      "columns": [
+        {
+          "name": "value",
+          "specification": {
+            "filter": "origin_top_metro.notna() and dest_top_metro.notna() and intra_top_metro == False",
+            "grouping": [
+              "origin_top_metro",
+              "dest_top_metro"
+            ],
+            "metric": "people",
+            "transform": null,
+            "unit_of_analysis": "one directed pair of metropolitan statistical areas",
+            "weights": null,
+            "window": null
+          }
+        }
+      ],
+      "decision": {
+        "decided": "keep within-coarse-unit edges in the flow table, flagged, and exclude them from coarse-unit in/out totals",
+        "id": "D0013",
+        "why": "they are roughly half the naive coarse total, and their share correlates about 0.7 with how many fine units each coarse unit contains \u2014 so a naive coarse ranking is differentially biased in a way that mimics a real geographic pattern. Flagging rather than deleting keeps the alternative computable, which is what makes the choice reviewable at all."
+      },
+      "id": "top_metro_relations",
+      "naming": "contract.naming",
+      "path": "frames/top_metro_relations.csv",
+      "rows": 863,
+      "sha256": "be39a7e83c32cee23a900d5524502768ad2176485a169af855262f43371b1004",
+      "unit_of_analysis": "one directed pair of metropolitan statistical areas",
+      "universe": "top_metro_pairs"
+    },
+    {
+      "clean_frame": "metro_totals",
+      "columns": [
+        {
+          "name": "total_in",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "total_in",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "total_out",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "total_out",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "net",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "net",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "rest_of_us_in_direct",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "rest_of_us_in_direct",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "rest_of_us_out_direct",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "rest_of_us_out_direct",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "rest_of_us_in_suppressed",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "rest_of_us_in_suppressed",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "rest_of_us_out_suppressed",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "rest_of_us_out_suppressed",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        },
+        {
+          "name": "net_positive",
+          "specification": {
+            "filter": null,
+            "grouping": [
+              "top_metro"
+            ],
+            "metric": "net_positive",
+            "transform": null,
+            "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+            "weights": null,
+            "window": null
+          }
+        }
+      ],
+      "decision": {
+        "decided": "keep within-coarse-unit edges in the flow table, flagged, and exclude them from coarse-unit in/out totals",
+        "id": "D0013",
+        "why": "they are roughly half the naive coarse total, and their share correlates about 0.7 with how many fine units each coarse unit contains \u2014 so a naive coarse ranking is differentially biased in a way that mimics a real geographic pattern. Flagging rather than deleting keeps the alternative computable, which is what makes the choice reviewable at all."
+      },
+      "id": "metro_totals",
+      "naming": "contract.naming",
+      "path": "frames/metro_totals.csv",
+      "rows": 30,
+      "sha256": "115f05cf8521974a7d8b75f5c345edaef5bc3e64ae849ba662eb8c86cdf57573",
+      "unit_of_analysis": "one of the 30 metropolitan statistical areas this project declares",
+      "universe": "top_metro_pairs"
+    }
+  ],
+  "funnel": {
+    "claims": [
+      {
+        "estimand": "net_domestic_migration_people",
+        "id": "C0001",
+        "reason": "gate(s) not met: stability",
+        "status": "rejected",
+        "supersedes": null,
+        "text": "Between tax years 2022 and 2023, county-equivalent 12105 recorded a net gain of 18,208 people who moved between U.S. counties \u2014 the largest net gain of any county-equivalent in the country.",
+        "unit_label": "people (tax filers and their dependents)",
+        "value": 18208.0
+      },
+      {
+        "estimand": "net_domestic_migration_people",
+        "id": "C0002",
+        "reason": "gate(s) not met: median_specification, stability",
+        "status": "rejected",
+        "supersedes": null,
+        "text": "County-equivalent 12105 gained 19,407 people in 2022-23 \u2014 the biggest net migration gain in America.",
+        "unit_label": "people",
+        "value": 19407.0
+      },
+      {
+        "estimand": "total_domestic_movers_people",
+        "id": "C0003",
+        "reason": null,
+        "status": "confirmed",
+        "supersedes": null,
+        "text": "14,900,349 people moved between U.S. counties between tax years 2022 and 2023.",
+        "unit_label": "people (tax filers and their dependents)",
+        "value": 14900349.0
+      },
+      {
+        "estimand": "net_domestic_migration_people",
+        "id": "C0004",
+        "reason": "gate(s) not met: stability",
+        "status": "rejected",
+        "supersedes": "C0001",
+        "text": "County-equivalent 48339 recorded a net gain of 18,661 people in 2022-23. Across the five logged specifications its rank among all county-equivalents moves, so no superlative is claimed.",
+        "unit_label": "people (tax filers and their dependents)",
+        "value": 18661.0
+      },
+      {
+        "estimand": "inter_metro_exchange_people",
+        "id": "C0005",
+        "reason": null,
+        "status": "confirmed",
+        "supersedes": null,
+        "text": "Between tax years 2022 and 2023, the 30 metros in this piece exchanged 1,555,397 people with one another.",
+        "unit_label": "people (tax filers and their dependents)",
+        "value": 1555397.0
+      },
+      {
+        "estimand": "net_destination_metro_count",
+        "id": "C0006",
+        "reason": null,
+        "status": "confirmed",
+        "supersedes": null,
+        "text": "Of the 30 metros in this piece, 12 are net destinations and 18 are net departures.",
+        "unit_label": "of the 30 metros",
+        "value": 12.0
+      }
+    ],
+    "confirmed_share": 0.5,
+    "counts": {
+      "confirmed": 3,
+      "frozen": 0,
+      "rejected": 3
+    },
+    "frozen_total": 6
+  },
+  "holdout": {
+    "axis": "none",
+    "reason": "single year-pair (2022-23); there is no second comparable period to withhold. Every claim from this project is defended by the specification curve, the floor and the confirmatory firewall \u2014 not by holdout."
+  },
+  "limiting": {
+    "accepted_failures": [],
+    "rejected_claims": [
+      "C0001",
+      "C0002",
+      "C0004"
+    ],
+    "vacuous_checks": [
+      "independence.agreement.outflow.inflow"
+    ]
+  },
+  "not_claimable": [
+    {
+      "evidence": [
+        {
+          "id": "C0001",
+          "kind": "claim",
+          "status": "rejected",
+          "text": "Between tax years 2022 and 2023, county-equivalent 12105 recorded a net gain of 18,208 people who moved between U.S. counties \u2014 the largest net gain of any county-equivalent in the country.",
+          "value": 18208.0,
+          "why": "gate(s) not met: stability"
+        },
+        {
+          "id": "C0002",
+          "kind": "claim",
+          "status": "rejected",
+          "text": "County-equivalent 12105 gained 19,407 people in 2022-23 \u2014 the biggest net migration gain in America.",
+          "value": 19407.0,
+          "why": "gate(s) not met: median_specification, stability"
+        },
+        {
+          "id": "C0004",
+          "kind": "claim",
+          "status": "rejected",
+          "text": "County-equivalent 48339 recorded a net gain of 18,661 people in 2022-23. Across the five logged specifications its rank among all county-equivalents moves, so no superlative is claimed.",
+          "value": 18661.0,
+          "why": "gate(s) not met: stability"
+        }
+      ],
+      "statement": "No county-level superlative is publishable from this dataset \u2014 not \"the biggest net gain\", not \"the fastest-growing county\", not a ranked top ten of counties. Across five defensible ways to compute net migration the leading county's rank moves: 80% of specifications agree where 90% is required. The instability is the finding; the superlative is not available."
+    },
+    {
+      "evidence": [
+        {
+          "id": "independence.agreement.outflow.inflow",
+          "kind": "check",
+          "status": "VACUOUS",
+          "text": "cross-input agreement between outflow and inflow",
+          "why": "the two inputs are one measurement in two layouts, so an agreement check between them subtracts a number from itself: it reports zero discrepancies forever and cannot fail"
+        }
+      ],
+      "statement": "Nothing here is corroborated by a second source. The inbound and outbound files are one measurement in two layouts, so their agreement certifies nothing \u2014 the check that compares them cannot fail, and \"confirmed against the inbound file\" is not a sentence this project can write."
+    },
+    {
+      "evidence": [
+        {
+          "id": "D0016",
+          "kind": "decision",
+          "text": "exclude L0010 from the curve for total_domestic_movers_people",
+          "why": "summing only the disclosed flows is a defensible way to answer 'how much movement is attributable to a specific pair of units', and an indefensible way to answer 'how many people moved' \u2014 it omits the withheld mass, which this source's own published totals quantify at about a quarter of the population. It is not a different analytic choice about the same estimand; it answers a different question."
+        }
+      ],
+      "statement": "10,813,466 is not a lower alternative estimate of total movers. It is the disclosed-only sum: an undercount of known size \u2014 the 4,086,883 people of withheld mass the publisher carries in its own totals \u2014 and not a different analytic choice about the same quantity."
+    },
+    {
+      "evidence": [
+        {
+          "id": "D0014",
+          "kind": "decision",
+          "text": "record the expected pairs with no disclosed flow as a quantified under-count and publish the number with any claim built on that relation set",
+          "why": "the prior written down before the run was ~0 absent pairs; the observed handful is small and consistent with the disclosure floor rather than with a join defect. The count is interpretable only because the prior predates it \u2014 which is the difference between this metric and a check that cannot fail."
+        }
+      ],
+      "statement": "The metropolitan relation frame is not a complete matrix. 7 of its 870 directed pairs have no disclosed flow at all, so a missing ribbon means \"withheld or absent\", never \"zero\"."
+    },
+    {
+      "evidence": [
+        {
+          "id": "D0013",
+          "kind": "decision",
+          "text": "keep within-coarse-unit edges in the flow table, flagged, and exclude them from coarse-unit in/out totals",
+          "why": "they are roughly half the naive coarse total, and their share correlates about 0.7 with how many fine units each coarse unit contains \u2014 so a naive coarse ranking is differentially biased in a way that mimics a real geographic pattern. Flagging rather than deleting keeps the alternative computable, which is what makes the choice reviewable at all."
+        },
+        {
+          "id": "D0008",
+          "kind": "decision",
+          "text": "carry the residual as its own labelled column per unit, and take every ratio's numerator and denominator from the published totals",
+          "why": "the residual is about a quarter of the national total but ranges from 3% to 99% by unit. Dropping it understates units unevenly, and mixing a disclosed-sum numerator with a published-total denominator biases each rate by that unit's own suppression share \u2014 a bias that correlates with unit size, which is to say it is shaped exactly like a real geographic finding."
+        }
+      ],
+      "statement": "The suppressed columns of the metro table are not a rest-of-US quantity. `rest_of_us_in_suppressed` and `rest_of_us_out_suppressed` are each metro's *unattributable* residual \u2014 every move the publisher did not attach to a specific county pair \u2014 and that includes moves inside the metro small enough to fall below the disclosure floor, which were therefore never subtracted along with the rest of the intra-metro mass. The split cannot be recovered from this source. It is bounded rather than unknown: each absent pair is under 20 returns, and the metro with the most absent internal pairs (Atlanta, 466 of 812 possible) has a ceiling of 8,854 returns against a suppressed column of 78,594 people."
+    },
+    {
+      "evidence": [
+        {
+          "id": "D0019",
+          "kind": "decision",
+          "text": "the membership of the net-destination count is not claimable: the number 12 may be published, the identity of the 12 may not",
+          "why": "the count's own specification curve is far steadier than the set behind it. Across the three defensible sign rules the count is 12, 12 and 13, but 3 of the 30 metros change side: Sacramento reverses when each metro's withheld residual is dropped and only the disclosed county-pair flows are read, and Riverside and Seattle reverse when the same published totals are measured in returns rather than in individuals. So a caption that answers 'which 12' asserts a membership that a defensible alternative computation contradicts, while the count it came from survives all three."
+        }
+      ],
+      "statement": "Which 12 metros are the net destinations is not claimable. The count is, and the set is not: across the three defensible ways to decide a metro's direction the count is 12, 12 and 13, but three of the thirty change side \u2014 Sacramento reverses when each metro's withheld residual is dropped and only the disclosed county-pair flows are read, and Riverside and Seattle reverse when the same published totals are measured in returns rather than in individuals. So no list of the twelve, no map that colours a metro by direction as a claimed fact, and no sentence naming one of them as a gainer or a loser. This is the *metro*-level entry and it bites on membership; the county-level entry in this list bites on ranking, and neither implies the other level is free."
+    },
+    {
+      "evidence": [
+        {
+          "id": "D0008",
+          "kind": "decision",
+          "text": "carry the residual as its own labelled column per unit, and take every ratio's numerator and denominator from the published totals",
+          "why": "the residual is about a quarter of the national total but ranges from 3% to 99% by unit. Dropping it understates units unevenly, and mixing a disclosed-sum numerator with a published-total denominator biases each rate by that unit's own suppression share \u2014 a bias that correlates with unit size, which is to say it is shaped exactly like a real geographic finding."
+        }
+      ],
+      "statement": "No migration *rate* is claimable from this package. Dividing these counts by resident population mixes universes \u2014 filers and their dependents over residents \u2014 which biases every rate low by each place's own non-filing share, and that share correlates with the demographics a migration story is usually about."
+    }
+  ],
+  "package_hash": "sha256:b7a3bba2195043c3bf326a1e437fa2f7ee17cbec06c54c0b799a1692f504ee20",
+  "project": {
+    "slug": "wam",
+    "title": "IRS SOI county-to-county migration, tax years 2022\u20132023"
+  },
+  "receipts": {
+    "accepted": "ACCEPTED.md",
+    "claims": "../claims/",
+    "decisions": "../audit/DECISIONS.md",
+    "front_door": "PACKAGE.md",
+    "funnel": "FUNNEL.md",
+    "ledger": "../audit/ledger.jsonl",
+    "not_claimable": "NOT-CLAIMABLE.md",
+    "profile": "../audit/PROFILE.md",
+    "source": "SOURCE.md"
+  },
+  "source": {
+    "attribution": "Source: IRS Statistics of Income county-to-county migration data, tax years 2022-2023. Counts are tax filers and their dependents, not residents.",
+    "dataset": "SOI county-to-county migration data \u2014 countyoutflow2223.csv and countyinflow2223.csv, with the Migration Data Users Guide (2223inpublicmigdoc.pdf) as the codebook",
+    "disclosure_floor": {
+      "applies": true,
+      "statement": "The publisher withholds any county-to-county flow below 20 returns. The withheld mass stays inside the published totals but cannot be attributed to any specific pair, so an absent pair means withheld-or-absent and never zero. Visible in the raw bytes as a distribution cliff: no row at 19 returns, 2,457 rows at exactly 20.",
+      "unit": "returns",
+      "value": 20
+    },
+    "files": [
+      {
+        "bytes": 4584439,
+        "encoding": "cp1252",
+        "format": "csv",
+        "name": "outflow",
+        "sha256": "364dba518f0db092515ccde03dda987815f6e54bcc8859640001e9185d4c106e",
+        "url": "https://www.irs.gov/pub/irs-soi/countyoutflow2223.csv"
+      },
+      {
+        "bytes": 4571970,
+        "encoding": "cp1252",
+        "format": "csv",
+        "name": "inflow",
+        "sha256": "813ba2ef550c6a598a5121ccf98edcc79f61f1af69eb495bf44cd830b1586745",
+        "url": "https://www.irs.gov/pub/irs-soi/countyinflow2223.csv"
+      },
+      {
+        "bytes": 143798,
+        "encoding": null,
+        "format": "xlsx",
+        "name": "delineation",
+        "sha256": "952c4b1e78acbb54e6ec9412434b7602fedacbf021736351a63c181bdb753629",
+        "url": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx"
+      },
+      {
+        "bytes": 431090,
+        "encoding": null,
+        "format": "pdf",
+        "name": "codebook",
+        "sha256": "ad72b67cf7c34b4d2d0fc9cac9d165895be57aebb648947270c73b997e719532",
+        "url": "https://www.irs.gov/pub/irs-soi/2223inpublicmigdoc.pdf"
+      }
+    ],
+    "licence": "No licence statement appears on the SOI migration pages or in the Users Guide. Public domain by the 17 U.S.C. \u00a7105 federal default \u2014 an inference from general federal copyright law, not a statement by the publisher about this product. IRS's general site policy: content created by federal employees is not subject to copyright and may be freely copied, credit requested. Treasury/IRS names, logos and seals may not be used in any way implying endorsement (18 U.S.C. \u00a7701). The release embeds a second federal agency's component \u2014 county assignment runs on a Census ZIP+4-to-county codebook \u2014 under the same regime.",
+    "publisher": "Internal Revenue Service, Statistics of Income Division",
+    "retrieved": "2026-07-28",
+    "universe": "Every count here is **tax filers and their dependents** \u2014 the individuals reported on individual income tax returns \u2014 and **not residents**. Non-filers appear nowhere: the very poor, many elderly people, undocumented residents and some students are absent from every figure, and nothing in the data reveals how many are missing. So a count is never a population, and a share of it is never a share of the population.\n\n`n1` counts returns (approximately households); `n2` counts individuals. The money column is aggregate adjusted gross income in thousands of dollars \u2014 a whole-group total, not a per-person average.\n\nA unit is the county of the address on the return, so a \"move\" is a change of filing address between the two years, not a dated relocation event. The temporal reference point is not recoverable from the values and is not asserted here.\n\nMovement below the publisher's disclosure floor is carried in the published totals but cannot be attributed to any specific pair of counties.\n",
+    "url": "https://www.irs.gov/pub/irs-soi/",
+    "vintage": "Tax years 2022-2023: one year-pair, published once and not revised. Geography pinned to the Census CBSA delineation of July 2023 (OMB Bulletin 23-01)."
+  },
+  "stamp": {
+    "claim_floor_hash": "99ca7abe04f150af1ca8ab743e4d20f5dcef06dff47728d51dea15428edda845",
+    "claim_hashes": {
+      "C0001": "sha256:354d6fb84b9074bfdec195654a94a465e7256da46c0c60db80fc466e3ab14814",
+      "C0002": "sha256:b175e25b725b9f5ae3f5ec1ff1a6584b47a86638b2772255adcef2e59ee61f88",
+      "C0003": "sha256:712a23e125360071a4f48c59a0731c2ac63464b41c84f59e54aac0eccba193f1",
+      "C0004": "sha256:b6ea6faea4232293271f276043f24fd7210d9ddb35d2256208e7deb01d00fa1f",
+      "C0005": "sha256:4333f1ade050c2737b0af666fd24abc90bb93bfe5fd0aa22e40403443cf4d155",
+      "C0006": "sha256:b861d14151814946f5c9f248cca114e668085199ef27427e42c8141ad06ff879"
+    },
+    "config_hash": "6ded7a8c1e29a41fed92e0da6dac5de8326e2472a001cc56b5ae3319de9d9ba4",
+    "input_hashes": {
+      "codebook": "ad72b67cf7c34b4d2d0fc9cac9d165895be57aebb648947270c73b997e719532",
+      "delineation": "952c4b1e78acbb54e6ec9412434b7602fedacbf021736351a63c181bdb753629",
+      "inflow": "813ba2ef550c6a598a5121ccf98edcc79f61f1af69eb495bf44cd830b1586745",
+      "outflow": "364dba518f0db092515ccde03dda987815f6e54bcc8859640001e9185d4c106e"
+    }
+  },
+  "universes": [
+    {
+      "directed": true,
+      "map": "county_to_top_metro",
+      "name": "top_metro_pairs",
+      "prior_absent": 0,
+      "prior_note": "the pilot's build plan predicted ~0 pairs with no disclosed flow and asked for an investigation if the number were large",
+      "selection": {
+        "measure": "POPESTIMATE2023 \u2014 the July 1, 2023 resident population estimate, the vintage contemporaneous with the 2022-2023 migration data",
+        "rule": "the 30 metropolitan statistical areas with the largest resident population",
+        "source": "U.S. Census Bureau, Population Estimates Program, Vintage 2025 release (CBSA-EST2025-ALLDATA), filtered to Metropolitan Statistical Areas (387 of them) and sorted descending",
+        "statement": "The 30 units here are the 30 metropolitan statistical areas with the largest resident population, ranked on the Census Bureau's July 2023 estimate. Population was chosen over migration volume deliberately: ranking metros by how many people they exchange would rank them on the same rows this project then aggregates, so the set would be drawn by the numbers it exists to measure. The cut is not a close call \u2014 the 30th metro (Cincinnati, 2,281,096) leads the 31st (Kansas City, 2,229,173) by 2.3%, and the same 30 are the top 30 under the 2023, 2024 and 2025 estimates alike; only their internal order shifts.\n\nTwo things this rule is not. It is not a fact about the publisher: the IRS did not choose these metros, this project did, and a different 30 would be a different set of numbers. And it is not a licence to divide by population \u2014 resident population selects the units and appears in no figure, because these counts are filers and their dependents and a rate over residents would mix universes.\n",
+        "url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/metro/totals/cbsa-est2025-alldata.csv"
+      },
+      "size": 30,
+      "subset_declared_on": "map"
+    }
+  ]
+}

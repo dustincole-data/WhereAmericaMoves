@@ -1,14 +1,16 @@
 ---
-// Stefaner frame: kicker + framed-finding headline + dek (07 §3). Rendered on the
-// explorer and every share route (08 §8.2).
-import { META } from '../lib/data';
-import { HEADLINE, DEK } from '../lib/copy';
-const yr = META.year_pair.replace('-', '–'); // en-dash year tag
+// The kicker only. v1's Header carried the H1 and the dek, which put the piece's headline
+// on all thirty metro pages as well as the front — and v1's headline was the single worst
+// row in the inventory: an unclaimed directional assertion over the whole dataset with no
+// computation behind it anywhere in the build. The H1 now belongs to the page that earns it.
+import { SITE_NAME } from '../copy';
+import { say } from '../copy/record';
+
+const kicker = say('IRS Statistics of Income · tax years 2022–2023', 'apparatus');
 ---
 
-<header>
-  <div class="kicker">Where America Moves · dustincoledata <span class="yr">· {yr} IRS</span></div>
-  <h1>{HEADLINE}</h1>
-  <div class="dek" set:html={DEK}></div>
+<header class="kicker">
+  <a href="/">{SITE_NAME.text}</a>
+  <span class="sep" aria-hidden="true">·</span>
+  <span class="src">{kicker.text}</span>
 </header>
-<hr class="rule" />

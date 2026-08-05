@@ -1,6 +1,22 @@
-// Number/format content model (07 §5.2, §5.7). The pipeline pre-derives every
-// figure; this only formats. Minus is U+2212 everywhere a signed number appears
-// (the sole exception, the year tag en-dash, lives in copy, not here).
+// Formatting only. Nothing here derives a quantity — it prints one the package published.
+//
+// v1's helpers that are gone, each for a stated reason:
+//   fmtRate · fmtRateAbs   `not_claimable` forbids every migration rate from this source.
+//   fmtAgi · agiAxis · spreadHandles · CAP_MERGE_GAP
+//                          v2 carries no income at all (Beauty 10 §7): the subject is the
+//                          record, and earnings are a fact about the movement.
+//   gainLose · verdictShort · verdictArticle
+//                          the category words. `not_claimable` (D0019) says WHICH twelve
+//                          metros are the net destinations is not claimable, so no sentence
+//                          may call a named metro a gainer or a loser. Its signed net is a
+//                          readout of its own cell and survives as a number.
+//   approxTotal            "about 1.6 million" was a hedge around an unclaimed aggregate.
+//                          C0005 is confirmed, so the piece prints 1,555,397.
+//
+// There is no percentage formatter, and that is deliberate rather than missing: a share is
+// a ratio of two cells, which `contract.aggregation` makes a spoken aggregate needing its
+// own claim. Every proportion in this piece is DRAWN — the claim bar, and each metro's own
+// withheld extent — and its components are printed as the counts the package published.
 
 export const MINUS = '−';
 
@@ -9,49 +25,3 @@ export const fmtInt = (n: number): string => Math.round(n).toLocaleString('en-US
 /** sign + comma; U+2212 for negatives, + for non-negatives */
 export const fmtSigned = (n: number): string =>
   (n >= 0 ? '+' : MINUS) + Math.abs(Math.round(n)).toLocaleString('en-US');
-
-/** sign + one decimal, per 1,000 residents; U+2212 for negatives (09 §7). One decimal
-    is what ~2 significant digits of migration rate honestly supports. */
-export const fmtRate = (n: number): string => (n >= 0 ? '+' : MINUS) + Math.abs(n).toFixed(1);
-
-/** unsigned rate, one decimal */
-export const fmtRateAbs = (n: number): string => Math.abs(n).toFixed(1);
-
-/** $ + comma, rounded to nearest $100 (avoids false precision on an aggregate avg) */
-export const fmtAgi = (n: number): string => '$' + (Math.round(n / 100) * 100).toLocaleString('en-US');
-
-/** gaining / losing / in balance (net === 0 effectively never with integer people) */
-export const gainLose = (net: number): string => (net > 0 ? 'gaining' : net < 0 ? 'losing' : 'in balance');
-
-export const verdictShort = (net: number): string =>
-  net > 0 ? 'net destination' : net < 0 ? 'net departure' : 'in balance';
-
-export const verdictArticle = (net: number): string =>
-  net > 0 ? 'a net destination' : net < 0 ? 'a net departure' : 'in balance';
-
-/** the national "about" gestalt (07 §5.7) */
-export const approxTotal = (n: number): string => {
-  if (n >= 1_000_000) return `about ${(n / 1_000_000).toFixed(1)} million`;
-  return `about ${(Math.round(n / 10_000) * 10_000).toLocaleString('en-US')}`;
-};
-
-/** dumbbell axis ends, padded then rounded to nearest $1,000 (05 dumbbell) */
-export const agiAxis = (aIn: number, aOut: number): { min: number; max: number } => {
-  const lo = Math.min(aIn, aOut) - 6000;
-  const hi = Math.max(aIn, aOut) + 6000;
-  return { min: Math.round(lo / 1000) * 1000, max: Math.round(hi / 1000) * 1000 };
-};
-
-/** two handles closer than this (% of the axis) hide each other */
-const HANDLE_MIN_GAP = 7;
-
-/** below this (% of the axis) the two captions overprint, so they merge into one */
-export const CAP_MERGE_GAP = 28;
-
-/** hold two handle positions (0–100) at least HANDLE_MIN_GAP apart, still on the axis */
-export const spreadHandles = (a: number, b: number): [number, number] => {
-  if (Math.abs(a - b) >= HANDLE_MIN_GAP) return [a, b];
-  const half = HANDLE_MIN_GAP / 2;
-  const mid = Math.min(100 - half, Math.max(half, (a + b) / 2));
-  return a <= b ? [mid - half, mid + half] : [mid + half, mid - half];
-};

@@ -1,0 +1,8 @@
+# claim: C0003
+# ledger_entry: L0008
+# result_digest: 93369f1839c989dcb3ff90e6b39468cae9c645e5ecc388a5d46ce67091f37d54
+# claimed_cell: all
+# specification: {"filter": null, "grouping": [], "metric": "out_total_people", "transform": null, "unit_of_analysis": "the national filing population", "weights": null, "window": null}
+# this is the median specification's own result, exported whole — not a top-k, not a re-aggregation, and not the clean frame
+unit,value,claimed
+all,14900349.0,True

@@ -1,94 +1,174 @@
 ---
-// The explorer — Warm Atlas frame + 30-arc directed chord (client island) + choropleth
-// selector + rail panel. Composition/interaction/mobile/a11y = ticket 05; copy = ticket 07.
+// The arc: ① the withheld quarter → ② no county won → ③ no rates → ④ the pairs with no
+// disclosed flow. Then the explorer, subordinated. Then the limits.
+//
+// One route, no scrollytelling, and the ruling was made on the beat inventory rather than
+// on taste: ① is drawn (the claim bar), ④ is already drawn inside the crowd as open marks
+// at the smallest disclosed size, and ② and ③ have no frame in the package to draw at all.
+// Three of four beats have nothing to animate to, so scroll would drive text opacity only
+// — and it would buy the whole scroll-smoothing verification problem for a piece whose
+// subject is a static record.
+//
+// The two plates arrive as GEOMETRY ONLY and every sentence on them is below, in the copy
+// module. 36px baked text inside a 1240 viewBox scaled to a 390px screen renders at ~11px,
+// so a baked headline is unreadable on a phone by construction.
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import Legend from '../components/Legend.astro';
 import Footer from '../components/Footer.astro';
-import { VIEWS } from '../lib/data';
+import MetroReadout from '../components/MetroReadout.astro';
+import { METROS } from '../lib/metros';
+import { assertPlate, TOTALS_BY_CBSA } from '../lib/package';
+import { metroCopy } from '../copy';
 import {
-  nationalPanelHTML,
-  HERO_ARIA,
-  HERO_HINT_NATIONAL,
-  MAP_ARIA,
-  MAP_HINT,
-  SELECT_LABEL,
-  MODE_GROUP_LABEL,
-  MODE_LABEL_PEOPLE,
-  MODE_LABEL_RATE,
-  MODE_LABEL_RATE_SHORT,
   HOME_TITLE,
   HOME_DESC,
-  OG_HOME_TITLE,
-  OG_HOME_DESC,
-} from '../lib/copy';
+  SITE_NAME,
+  HEADLINE,
+  STANDFIRST,
+  REGISTER_CLAIM,
+  BAR_DISCLOSED,
+  BAR_WITHHELD,
+  BAR_WITHHELD_SUB,
+  REGISTER_FRAME,
+  COMPLEMENT,
+  LEGEND,
+  BEAT_COUNTY,
+  BEAT_RATES,
+  BEAT_ABSENT,
+  EXPLORER_TITLE,
+  EXPLORER_LEAD,
+  MAP_HINT,
+  MAP_ARIA,
+  HERO_ARIA,
+  SELECT_LABEL,
+  AT_REST,
+  RESET,
+} from '../copy';
+
+import claimSvgRaw from '../assets/09-claim.svg?raw';
+import fieldSvgRaw from '../assets/09-field.svg?raw';
+import hues from '../assets/09-hues.json';
+
+// The one check hashes do not watch: a plate drawn from an older package, sitting beside a
+// fresh manifest. Every emitted plate carries data-package; both are asserted here.
+const claimSvg = assertPlate(claimSvgRaw, '09-claim.svg');
+const fieldSvg = assertPlate(fieldSvgRaw, '09-field.svg');
+const cut = Number(/data-cut="([\d.]+)"/.exec(claimSvg)![1]);
 
 const site = Astro.site!;
 const canonical = new URL('/', site).href;
 const ogImage = new URL('/og/index.png', site).href;
+
+const metros = METROS.map((m) => metroCopy(m.cbsa));
+const hueOf = (cbsa: string) => (hues.metros as Record<string, { read: string }>)[cbsa].read;
+
+// The explorer's payload, inlined rather than fetched. 10's open question — inline vs fetch
+// for the browser payload — resolves to inline, which also deletes the generated
+// `public/data/` artifact and the loading string it would have needed. It carries no copy:
+// every string on this page is server-rendered, so the client constructs nothing and the
+// dist scan reads the real text rather than a template.
+const mapData = METROS.map((m, i) => {
+  const t = TOTALS_BY_CBSA.get(m.cbsa)!;
+  return {
+    cbsa: m.cbsa,
+    lat: m.lat,
+    lon: m.lon,
+    through: t.total_in + t.total_out, // drawn, never printed: a mark may aggregate its own cells
+    hue: hueOf(m.cbsa),
+    aria: metros[i].aria.text,
+  };
+});
 ---
 
 <Layout
   title={HOME_TITLE}
   description={HOME_DESC}
-  ogTitle={OG_HOME_TITLE}
-  ogDesc={OG_HOME_DESC}
+  ogTitle={SITE_NAME}
+  ogDesc={HOME_DESC}
   ogImage={ogImage}
   canonical={canonical}
 >
   <div class="wrap">
     <Header />
 
-    <div class="stage">
-      <!-- HERO: dense 30-arc chord (desktop) / focus chord (mobile) -->
-      <div class="card chordcard">
-        <div class="chordhead">
-          <div class="scope" id="scope">All 30 metros</div>
-          <div class="headright">
-            <div class="modeswitch" id="modeSwitch" role="radiogroup" aria-label={MODE_GROUP_LABEL}>
-              <button type="button" role="radio" data-mode="people" aria-checked="true" tabindex="0"
-                >{MODE_LABEL_PEOPLE}</button
-              >
-              <button type="button" role="radio" data-mode="per1k" aria-checked="false" tabindex="-1"
-                ><span class="wide">{MODE_LABEL_RATE}</span><span class="narrow">{MODE_LABEL_RATE_SHORT}</span></button
-              >
-            </div>
-            <div class="verdict" id="verdict"></div>
-          </div>
-        </div>
-        <svg id="hero" viewBox="0 0 600 560" role="img" aria-label={HERO_ARIA}></svg>
-        <div class="hint" id="herohint">{HERO_HINT_NATIONAL}</div>
+    <!-- ── the plate ── -->
+    <section class="plate">
+      <h1>{HEADLINE.text}</h1>
+      <div class="standfirst">
+        {STANDFIRST.map((s) => <p>{s.text}</p>)}
       </div>
 
-      <!-- RAIL: map selector -->
-      <div class="card mapcard">
-        <div class="maptop">
-          <div class="panel-title" style="margin:0">The map · click a metro</div>
+      <p class="register">{REGISTER_CLAIM.text}</p>
+      <figure class="claimfig">
+        <div class="claimplate" set:html={claimSvg} />
+        <figcaption class="claimcap" style={`--cut:${(cut * 100).toFixed(3)}%`}>
+          <span class="cap-left">{BAR_DISCLOSED.text}</span>
+          <span class="cap-right">
+            <b class="tnum">{BAR_WITHHELD.text}</b>
+            {BAR_WITHHELD_SUB.map((s) => <i>{s.text}</i>)}
+          </span>
+        </figcaption>
+      </figure>
+
+      <p class="register">{REGISTER_FRAME.text}</p>
+      <figure class="fieldfig">
+        <div class="field" id="field" role="img" aria-label={HERO_ARIA.text} set:html={fieldSvg} />
+        <figcaption class="legend">
+          <p class="complement">{COMPLEMENT.text}</p>
+          {LEGEND.map((l) => <p>{l.text}</p>)}
+        </figcaption>
+      </figure>
+    </section>
+
+    <!-- ── beat ② ── -->
+    <section class="beat">
+      <h2>{BEAT_COUNTY[0].text}</h2>
+      {BEAT_COUNTY.slice(1).map((p) => <p>{p.text}</p>)}
+    </section>
+
+    <!-- ── beat ③ ── -->
+    <section class="beat">
+      <h2>{BEAT_RATES[0].text}</h2>
+      {BEAT_RATES.slice(1).map((p) => <p>{p.text}</p>)}
+    </section>
+
+    <!-- ── beat ④ ── -->
+    <section class="beat">
+      <h2>{BEAT_ABSENT[0].text}</h2>
+      {BEAT_ABSENT.slice(1).map((p) => <p>{p.text}</p>)}
+    </section>
+
+    <!-- ── the explorer, subordinated ── -->
+    <section class="explorer" id="explorer">
+      <h2>{EXPLORER_TITLE.text}</h2>
+      <p class="lead">{EXPLORER_LEAD.text}</p>
+
+      <div class="exgrid">
+        <div class="exmap">
           <div class="selectwrap">
-            <label class="vh" for="metroPick">{SELECT_LABEL}</label>
+            <label class="vh" for="metroPick">{SELECT_LABEL.text}</label>
             <select id="metroPick">
-              <option value="">National view</option>
-              {VIEWS.map((v) => <option value={v.i}>{v.name}, {v.st}</option>)}
+              <option value="">{RESET.text}</option>
+              {metros.map((m) => <option value={m.cbsa}>{m.name.text}, {m.state.text}</option>)}
             </select>
           </div>
+          <svg id="map" viewBox="0 0 640 400" role="img" aria-label={MAP_ARIA.text}></svg>
+          <p class="hint">{MAP_HINT.text}</p>
         </div>
-        <svg id="map" viewBox="0 0 640 400" role="img" aria-label={MAP_ARIA}></svg>
-        <div class="hint" id="maphint">{MAP_HINT}</div>
+
+        <div class="expanel">
+          <p class="atrest" id="atrest">{AT_REST.text}</p>
+          {metros.map((m) => <MetroReadout m={m} />)}
+        </div>
       </div>
-
-      <!-- RAIL: panel (national summary at rest; swaps to metro readout on select) -->
-      <div class="card panel" id="panel" set:html={nationalPanelHTML()}></div>
-
-      <!-- RAIL: legend-as-art -->
-      <Legend />
-    </div>
+    </section>
 
     <Footer />
   </div>
 
   <div class="vh" id="live" aria-live="polite"></div>
-  <div class="tip" id="tip"></div>
 
+  <script type="application/json" id="map-data" set:html={JSON.stringify(mapData)} is:inline></script>
   <script>
     import '../lib/explorer.ts';
   </script>
