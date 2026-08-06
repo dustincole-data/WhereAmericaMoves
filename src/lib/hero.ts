@@ -49,6 +49,11 @@ interface Payload {
   viewBox: [number, number, number, number];
   hubs: Hub[];
   hues: Record<string, { hub: string; read: string; wash: string }>;
+  /** The badges are buttons, so they need names. Name-from-content over an SVG <text> child
+      is unreliable in Safari/VoiceOver, and the rewrite that made the crowd the selector
+      dropped the labels the deleted dot map used to set — so thirty controls shipped nameless.
+      These are `metroCopy(...).aria`, which is a real CopyRecord and was dead code. */
+  aria: Record<string, string>;
   /** [origin, dest, people] — one row per disclosed pair. */
   pairs: [string, string, number][];
   /** [origin, dest] — the directions with no disclosed flow at all. */
@@ -66,10 +71,23 @@ const BOW = 0.135;
 
 /** The taper. 09's D2: a line reads as travelling when it is fat where it starts and thin
     where it arrives, and an even stroke reads identically in both directions — which is
-    what "can't see where they are going" was pointing at in round 2b. */
-const HEAD_W = 0.9;
+    what "can't see where they are going" was pointing at in round 2b. HEAD_W is a fraction
+    of the line's own width rather than a constant: a constant head drew every arrival end
+    NARROWER than the smallest width the scale can express, i.e. off the bottom of its own
+    axis, so the taper was silently subtracting value instead of showing direction. */
+const HEAD_FRAC = 0.3;
+
+/** The width scale, and it is MULTIPLICATIVE. It used to be `MIN_W + sqrt(v/max)*(MAX_W-MIN_W)`
+    — an additive floor, which is not a floor at all: it lifts every cell, not the small ones.
+    Measured on the real frame, that drew a 30-person cell at the width of 965 people (32.2x)
+    and overstated 349 of 863 cells by 2x or more. This is the exact defect 09 round 1 was
+    failed for (an undisclosed area floor drawing a 30-person cell at 4.25x its honest area),
+    arriving again in a different channel and seven times worse.
+
+    Now: honest sqrt, with a hard floor applied only below it — and the floor is DISCLOSED in
+    the legend, which is the other half of 09's E2 that the first draw dropped. */
 const MAX_W = 15;
-const MIN_W = 1.4;
+const FLOOR_W = 1;
 
 const el = <T extends Element>(sel: string) => document.querySelector(sel) as T | null;
 
@@ -103,7 +121,7 @@ if (field && payloadEl) {
     (absentIn.get(d) ?? absentIn.set(d, []).get(d)!).push(o);
   }
 
-  const width = (people: number) => MIN_W + Math.sqrt(people / maxPeople) * (MAX_W - MIN_W);
+  const width = (people: number) => Math.max(FLOOR_W, MAX_W * Math.sqrt(people / maxPeople));
 
   // ── the layers ───────────────────────────────────────────────────────────────
   // Under the badges, over the crowd: a line must not cover the landmark it points at.
@@ -132,12 +150,23 @@ if (field && payloadEl) {
     const len = Math.hypot(dx, dy) || 1;
     // Start at the badge's edge, stop at the far badge's edge: a line that starts under the
     // ring it starts from reads as coming from nowhere.
+    //
+    // But the trims are capped, and that cap matters more than it looks. Badge radii run
+    // 18–32 units and adjacent metros sit closer than that, so the untrimmed rule deleted
+    // the heaviest cells outright: Los Angeles to Riverside, 78,209 people — THE LARGEST CELL
+    // IN THE FRAME, the one that defines the top of the width scale — was drawn 1.8 units long
+    // and 15 wide, a blob under the badge layer. Nine of the twenty heaviest cells were wider
+    // than they were long. A cap that keeps a minimum drawn length is the difference between
+    // "these two places trade the most people in the country" being the biggest mark on screen
+    // and it being invisible.
+    const keep = Math.max(0, len - 6);
+    const scale = trim0 + trim1 > keep ? keep / (trim0 + trim1) : 1;
     const ux = dx / len;
     const uy = dy / len;
-    x0 += ux * trim0;
-    y0 += uy * trim0;
-    x1 -= ux * trim1;
-    y1 -= uy * trim1;
+    x0 += ux * trim0 * scale;
+    y0 += uy * trim0 * scale;
+    x1 -= ux * trim1 * scale;
+    y1 -= uy * trim1 * scale;
     dx = x1 - x0;
     dy = y1 - y0;
     const L = Math.hypot(dx, dy) || 1;
@@ -159,7 +188,7 @@ if (field && payloadEl) {
       const tl = Math.hypot(tx, ty) || 1;
       const nx = -ty / tl;
       const ny = tx / tl;
-      const h = (w0 + (HEAD_W - w0) * t) / 2;
+      const h = (w0 * (1 - (1 - HEAD_FRAC) * t)) / 2;
       top.push(`${(px + nx * h).toFixed(1)},${(py + ny * h).toFixed(1)}`);
       bot.push(`${(px - nx * h).toFixed(1)},${(py - ny * h).toFixed(1)}`);
     }
@@ -192,11 +221,14 @@ if (field && payloadEl) {
     g.setAttribute('y1', String(y0));
     g.setAttribute('x2', String(x1));
     g.setAttribute('y2', String(y1));
-    // Transparent at the fat end, so a heavy line does not read as a wedge of ink parked on
-    // its own hub, and the two hues meet where the eye is already travelling.
+    // The fade used to start at 0.1 alpha and not reach full until 32% along — which put the
+    // faintest ink on the WIDEST end and made the legend's own sentence false: "heavy where it
+    // leaves, fine where it arrives" described a mark whose visual weight peaked a third of the
+    // way across. Worse on hover, where the same end landed at 3.8% alpha. Now it is inked
+    // where it leaves; the softening is a lead-in, not an erasure.
     for (const [off, col, op] of [
-      [0, from, 0.1],
-      [0.32, from, 1],
+      [0, from, 0.62],
+      [0.12, from, 1],
       [1, to, 1],
     ] as [number, string, number][]) {
       const s = document.createElementNS(SVG_NS, 'stop');
@@ -226,15 +258,20 @@ if (field && payloadEl) {
     // The washed connective pass first — 09's two-area treatment, inverted onto direction:
     // arrivals are the wash, departures are the read. "Where these people are moving to" is
     // the question, so departures get the chroma.
+    // Arrivals were drawn in the `wash` hue at half alpha, which measured 1.55:1 against the
+    // ground for all thirty — under the 3:1 floor for a graphical object the legend names as
+    // content. They are half of what a metro's record IS. The `read` hue at 0.62 clears the
+    // floor and the weight difference still carries the distinction, which is what the
+    // two-area treatment actually asks for.
     for (const [o, v] of into.get(cbsa) ?? []) {
       const h = hub.get(o);
       if (!h) continue;
       const p = document.createElementNS(SVG_NS, 'path');
       p.setAttribute('d', curve(h.x, h.y, h0.x, h0.y, h.r + 1, h0.r + 1));
       p.setAttribute('fill', 'none');
-      p.setAttribute('stroke', data.hues[o]?.wash ?? '#9aa0aa');
-      p.setAttribute('stroke-width', (0.5 + Math.sqrt(v / maxPeople) * 2.6).toFixed(2));
-      p.setAttribute('stroke-opacity', String(0.5 * weight));
+      p.setAttribute('stroke', data.hues[o]?.read ?? '#9aa0aa');
+      p.setAttribute('stroke-width', Math.max(0.6, 3.0 * Math.sqrt(v / maxPeople)).toFixed(2));
+      p.setAttribute('stroke-opacity', String(0.62 * weight));
       p.setAttribute('stroke-linecap', 'round');
       p.setAttribute('class', 'ln-in');
       gLines.appendChild(p);
@@ -252,6 +289,21 @@ if (field && payloadEl) {
     }
 
     // The absences, drawn in both directions and never omitted.
+    //
+    // THE GLYPH IS THE SMALLEST MARK THIS PIECE DRAWS, and that is not a style choice — it is
+    // 09's E1, which round 1 was failed on. The first draw put a dashed ring at the far
+    // BADGE's radius + 4.5; badge radii are typography and encode nothing, so the ring came
+    // out at r 22.5–36.9, which on the crowd's own area scale (107.25 people per r²) decodes
+    // to 54,295–146,031 people. The largest disclosed cell in the entire frame is 78,209. The
+    // glyph for "no flow was disclosed at all" was drawn bigger than the biggest flow in the
+    // country — the same inversion that was FATAL in round 1, an order of magnitude worse.
+    // It also drew the ring around the SELECTED metro for every inbound absence, so choosing
+    // Cincinnati stamped three dashed halos on Cincinnati's own badge.
+    //
+    // Now: the disc equals the plate's own floored mark radius, it sits at the far end of its
+    // own line, and findability is carried by the dashed stroke — which is exactly what round 2
+    // ruled, restated for a line instead of a leader.
+    const ABSENT_R = 1.05;
     for (const [list, outward] of [
       [absentOut.get(cbsa) ?? [], true],
       [absentIn.get(cbsa) ?? [], false],
@@ -260,26 +312,30 @@ if (field && payloadEl) {
         const h = hub.get(other);
         if (!h) continue;
         const [a, b] = outward ? [h0, h] : [h, h0];
+        const trimB = b.r + 7;
         const p = document.createElementNS(SVG_NS, 'path');
-        p.setAttribute('d', curve(a.x, a.y, b.x, b.y, a.r + 1, b.r + 5));
+        p.setAttribute('d', curve(a.x, a.y, b.x, b.y, a.r + 1, trimB));
         p.setAttribute('fill', 'none');
         p.setAttribute('stroke', 'var(--ink-2)');
-        p.setAttribute('stroke-width', '1');
-        p.setAttribute('stroke-dasharray', '3 4');
-        p.setAttribute('stroke-opacity', String(0.85 * weight));
+        p.setAttribute('stroke-width', '1.6');
+        p.setAttribute('stroke-dasharray', '4 5');
+        p.setAttribute('stroke-opacity', String(0.9 * weight));
         p.setAttribute('class', 'ln-absent');
         gLines.appendChild(p);
-        const ring = document.createElementNS(SVG_NS, 'circle');
-        ring.setAttribute('cx', String(b.x));
-        ring.setAttribute('cy', String(b.y));
-        ring.setAttribute('r', String(b.r + 4.5));
-        ring.setAttribute('fill', 'none');
-        ring.setAttribute('stroke', 'var(--ink-2)');
-        ring.setAttribute('stroke-width', '1');
-        ring.setAttribute('stroke-dasharray', '3 4');
-        ring.setAttribute('stroke-opacity', String(0.85 * weight));
-        ring.setAttribute('class', 'ln-absent');
-        gLines.appendChild(ring);
+
+        const L = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        const ex = b.x - ((b.x - a.x) / L) * trimB;
+        const ey = b.y - ((b.y - a.y) / L) * trimB;
+        const dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('cx', ex.toFixed(1));
+        dot.setAttribute('cy', ey.toFixed(1));
+        dot.setAttribute('r', String(ABSENT_R));
+        dot.setAttribute('fill', 'none');
+        dot.setAttribute('stroke', 'var(--ink-2)');
+        dot.setAttribute('stroke-width', '1.4');
+        dot.setAttribute('stroke-opacity', String(0.9 * weight));
+        dot.setAttribute('class', 'ln-absent');
+        gLines.appendChild(dot);
       }
     }
   }
@@ -291,6 +347,10 @@ if (field && payloadEl) {
     panels.set(p.dataset.metroPanel!, p);
     p.hidden = true;
   });
+
+  const resetOpt = picker?.querySelector('option[value=""]') as HTMLOptionElement | null;
+  const RESET_TEXT = resetOpt?.textContent || '';
+  const CHOOSE_TEXT = document.querySelector('label[for="metroPick"]')?.textContent || RESET_TEXT;
 
   let selected: string | null = null;
   let lit: Element[] = [];
@@ -309,6 +369,15 @@ if (field && payloadEl) {
 
   function select(cbsa: string | null) {
     selected = cbsa;
+    // The preview class outlived its own hover. Both hover guards bail once something is
+    // selected, and this function never cleared the class — so the ordinary mouse path
+    // (hover a badge, click it, move away) left `previewing` set forever, and because
+    // `.field.previewing [data-origin]` follows `.field.focused [data-origin]` at equal
+    // specificity it WON: the isolation the whole interaction depends on silently did not
+    // happen, and after a reset the resting crowd stayed at half opacity for the rest of the
+    // session. Every gate screenshot missed it because they were synthetic clicks with no
+    // hover in front of them.
+    field.classList.remove('previewing');
     panels.forEach((p, key) => {
       p.hidden = key !== cbsa;
     });
@@ -317,12 +386,20 @@ if (field && payloadEl) {
     if (cbsa) drawLines(cbsa, 1);
     else clearLines();
     svg.querySelectorAll('g[data-metro]').forEach((g) => {
-      g.classList.toggle('sel', (g as SVGGElement).dataset.metro === cbsa);
+      const on = (g as SVGGElement).dataset.metro === cbsa;
+      g.classList.toggle('sel', on);
+      g.setAttribute('aria-pressed', String(on));
     });
     if (picker && picker.value !== (cbsa ?? '')) picker.value = cbsa ?? '';
+    // The reset option is the only visible text on the control at rest, and "Show every metro"
+    // read as a filter that was already off — an instruction arguing against being touched.
+    // It is only true once something is chosen.
+    if (resetOpt) resetOpt.textContent = cbsa ? RESET_TEXT : CHOOSE_TEXT;
     if (live) {
       const p = cbsa ? panels.get(cbsa) : null;
-      live.textContent = p ? p.querySelector('h2')?.textContent || '' : atRest?.textContent || '';
+      // Cleared first, so re-selecting the same metro still announces.
+      live.textContent = '';
+      live.textContent = p ? p.dataset.announce || '' : atRest?.textContent || '';
     }
   }
 
@@ -338,6 +415,8 @@ if (field && payloadEl) {
     const h = hub.get(cbsa);
     g.setAttribute('tabindex', '0');
     g.setAttribute('role', 'button');
+    g.setAttribute('aria-label', data.aria[cbsa] ?? '');
+    g.setAttribute('aria-pressed', 'false');
     g.setAttribute('class', 'badge');
     if (h) {
       const hit = document.createElementNS(SVG_NS, 'circle');
@@ -374,31 +453,38 @@ if (field && payloadEl) {
     });
     // The preview is what tells a reader the picture answers to them before they commit to
     // a click. Hover only: a coarse pointer has no hover, and a tap goes straight through.
+    // 0.7, not 0.42. The preview is the moment a reader learns the picture answers to them,
+    // and at 0.42 — compounding with the old gradient's 0.1 lead-in — the value-carrying end
+    // of every ribbon landed at 3.8% alpha, so the discovery frame was the faintest image on
+    // the page.
     g.addEventListener('pointerenter', (e) => {
       if (e.pointerType !== 'mouse' || selected) return;
       field.classList.add('previewing');
-      drawLines(cbsa, 0.42);
+      drawLines(cbsa, 0.7);
     });
     g.addEventListener('pointerleave', (e) => {
-      if (e.pointerType !== 'mouse' || selected) return;
+      if (e.pointerType !== 'mouse') return;
       field.classList.remove('previewing');
-      clearLines();
+      if (!selected) clearLines();
     });
     g.addEventListener('focus', () => {
       if (selected) return;
       field.classList.add('previewing');
-      drawLines(cbsa, 0.42);
+      drawLines(cbsa, 0.7);
     });
     g.addEventListener('blur', () => {
-      if (selected) return;
       field.classList.remove('previewing');
-      clearLines();
+      if (!selected) clearLines();
     });
   });
 
   // Anywhere on the plate that is not a metro is the way back to the whole crowd.
   svg.addEventListener('pointerup', (e) => {
     if (!(e.target as Element).closest?.('g[data-metro]')) select(null);
+  });
+  // …and so is Escape, which was the only way out a keyboard had none of.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && selected) select(null);
   });
 
   picker?.addEventListener('change', () => select(picker.value || null));

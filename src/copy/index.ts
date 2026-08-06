@@ -21,6 +21,7 @@ import {
   C0005,
   C0006,
   WITHHELD,
+  TOTAL_MOVERS,
   ABSENT_PAIRS,
   FRAME_PAIRS,
   UNIVERSE,
@@ -63,8 +64,12 @@ export const STANDFIRST: CopyRecord[] = [
   say('They are tax filers and their dependents, not residents.', 'apparatus'),
 ];
 
+/** The noun, not a pronoun. "them" and "that total" both reached back to a number the reader
+    last saw a full screen above, and the NEAREST total on the way down is the crowd's
+    1,555,397 — a different universe the piece exists to keep separate. Naming both figures is
+    three words and closes the only route by which the page invited its own forbidden sum. */
 export const WITHHELD_LINE = say(
-  `${fmtInt(WITHHELD)} of them are inside that total and outside every map of it: counted, and attributable to no pair of counties.`,
+  `${fmtInt(WITHHELD)} of the ${fmtInt(TOTAL_MOVERS)} are inside that total and outside every map of it: counted, and attributable to no pair of counties.`,
   'C0003'
 );
 
@@ -112,12 +117,13 @@ export const LEGEND: CopyRecord[] = [
     drawn at once, so the middle has nothing to go to mush with. */
 export const HERO_LINES: CopyRecord[] = [
   say(
-    'Each line is one direction between two metros, drawn at the flow the publisher ' +
-      'disclosed: heavy where it leaves, fine where it arrives. Arrivals run beneath as hairlines.',
+    'Each line is one direction between two metros, and its width where it leaves is people. ' +
+      'Arrivals run beneath it, thinner. Lines too fine to draw are drawn at the finest width ' +
+      'this piece uses, so the smallest are not to scale.',
     'apparatus'
   ),
   say(
-    'A dashed line to an open ring is a direction the record discloses nothing for. It means ' +
+    'A dashed line to an open dot is a direction the record discloses nothing for. It means ' +
       'withheld or absent. It never means zero.',
     'apparatus'
   ),

@@ -34,7 +34,11 @@
 
   /* ── Spacing / rhythm ── */
   --gutter: clamp(18px, 5vw, 56px);
-  --measure: 62ch;
+  /* NOT in `ch`. `ch` resolves at the element it lands on, and every block that carried
+     `max-width: var(--measure)` is a 16px container holding 12–14px text — so 62ch measured
+     the container's em and delivered 87–105 characters a line, well past the ~75 ceiling.
+     A rem measure is absolute and means the same thing everywhere it is used. */
+  --measure: 30rem;
   --radius: 8px;
   /* The masthead's height, subtracted from the viewport so the crowd gets the rest of the
      first screen exactly. A guessed value here shows up as a scrollbar on the hero. */

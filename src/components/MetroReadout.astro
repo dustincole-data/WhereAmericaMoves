@@ -29,9 +29,15 @@ const Heading = heading;
 const pct = (x: number) => `${(x * 100).toFixed(3)}%`;
 ---
 
-<article class="readout" data-metro-panel={m.cbsa}>
+<!-- `data-announce` is what the hero's live region reads out. Scraping the DOM for it gave
+     "New YorkNY-NJ. Moved in250,643" — inline nodes with no whitespace between them — and a
+     screen-reader user is exactly the reader who cannot see that the layout supplies the gap.
+     `desc` is an authored CopyRecord already used as this metro's meta description. -->
+<article class="readout" data-metro-panel={m.cbsa} data-announce={m.desc.text}>
   <header class="rhead">
-    <Heading>{m.name.text}<span class="st">{m.state.text}</span></Heading>
+    <!-- The space is load-bearing: without it the heading's textContent is "New YorkNY", and
+         that string is what the hero's live region announces on every selection. -->
+    <Heading>{m.name.text} <span class="st">{m.state.text}</span></Heading>
     <p class="unit">{m.unit.text}</p>
   </header>
 

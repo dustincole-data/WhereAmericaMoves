@@ -92,6 +92,10 @@ const heroData = {
   hues: hues.metros,
   pairs: RELATIONS.map((r) => [r.origin, r.dest, r.people]),
   absent: plate.absent,
+  // The badges are buttons; buttons need names. The deleted dot map used to set these and the
+  // rewrite dropped them, so thirty controls shipped nameless while `metroCopy(...).aria` sat
+  // in the ledger unrendered.
+  aria: Object.fromEntries(metros.map((m) => [m.cbsa, m.aria.text])),
 };
 ---
 
@@ -132,6 +136,12 @@ const heroData = {
       <div class="field" id="field" set:html={fieldSvg} />
       <p class="vh">{HERO_ARIA.text}</p>
     </div>
+
+    <!-- The key rides WITH the picture, under it, where a legend belongs. It used to sit in
+         the block below a map that takes the whole viewport, so a line and its explanation
+         were never on screen together — the reader met the dashed absences a full scroll
+         before being told what they are. -->
+    <p class="keystrip">{HERO_LINES.map((l) => <span>{l.text}</span>)}</p>
   </section>
 
   <div class="wrap">
@@ -139,7 +149,6 @@ const heroData = {
     <div class="legend">
       <p class="reg">{REGISTER_FRAME.text}</p>
       <p class="complement">{COMPLEMENT.text}</p>
-      {HERO_LINES.map((l) => <p>{l.text}</p>)}
       {LEGEND.map((l) => <p>{l.text}</p>)}
     </div>
 

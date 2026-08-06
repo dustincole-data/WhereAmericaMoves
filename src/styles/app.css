@@ -72,7 +72,7 @@
   height: calc(100svh - var(--headerH));
   min-height: 460px;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 /* A BAND, not a rail, and the arithmetic is the reason. A 1240×812 plate is squarer than any
    laptop viewport, so it is always height-bound: at 1440×900 it fits at 1307×856 and uses 91%
@@ -92,10 +92,12 @@
   column-gap: clamp(14px, 2.2vw, 40px);
   row-gap: 0.3rem;
   align-items: baseline;
-  /* The floor is the SELECTED height, not the resting one. Measured: the record strip wraps
-     to two lines below ~1500px, and a band sized for the resting state would shrink the map
-     by 15px the instant anyone clicked. */
-  min-height: 108px;
+  /* The floor is the WIDEST SELECTED state, not the resting one and not an average. The strip
+     wraps at different widths for different metros — measured at 1440: Baltimore, Chicago and
+     Miami land at 114px, Los Angeles, New York and Washington at 121 — so a floor set to the
+     resting height moves the map under the pointer on some clicks and not others, which is
+     worse than moving it on all of them. */
+  min-height: 122px;
   padding: 0 var(--gutter) 0.5rem;
 }
 .band h1 {
@@ -136,6 +138,7 @@
 }
 .sf {
   margin: 0 0 0.15rem;
+  max-width: 30rem;
   font-size: clamp(0.74rem, 0.86vw, 0.81rem);
   line-height: 1.42;
   color: var(--ink-2);
@@ -200,13 +203,15 @@
 }
 .panel .cells .lab,
 .panel .rrow .rlab {
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   letter-spacing: 0.06em;
   flex: 0 0 auto;
   white-space: nowrap;
 }
+/* The payoff outranks the apparatus around it. It was 14.08px — below the body default and
+   below the caveats in the footer. */
 .panel .cells .fig {
-  font-size: 0.88rem;
+  font-size: 1.05rem;
 }
 /* Laid out along a line, the readout loses the whitespace a stacked row gave it for free:
    `72,284` and `in` become one word. The gaps are explicit here. */
@@ -238,7 +243,21 @@
   margin: 0;
   font-size: 0.82rem;
   line-height: 1.45;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+/* The mark's key, under the picture, on the same screen as it. Two sentences on one line
+   where the width allows, so it costs the map about thirty pixels rather than a section. */
+.keystrip {
+  margin: 0;
+  padding: 0.45rem var(--gutter) 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
   color: var(--muted);
+}
+.keystrip span + span {
+  margin-left: 1.4rem;
 }
 
 .register {
@@ -342,18 +361,35 @@
 .field [data-metro] {
   transition: opacity var(--isolate-ms) ease;
 }
-.field.focused [data-origin],
-.field.focused [data-metro] {
+/* THE BADGES DO NOT GO DOWN WITH THE CROWD, and this is the single most consequential line
+   in the file. One rule used to dim `[data-origin]` and `[data-metro]` together to 0.09,
+   which composites the baked #15181d label to 1.20:1 — so the instant you selected a metro,
+   the names of the twenty-nine places its lines point AT became unreadable. The mark's whole
+   claim is "one direction between two metros"; the reader could see the direction and could
+   not read the far end. It also took the keyboard focus ring down with it, since the focus
+   indicator is a stroke on the badge's own ring. Marks go to 0.09; badges hold at 0.42, which
+   lands the label at 3.6:1 and the crowd still reads as isolated. */
+.field.focused [data-origin] {
   opacity: var(--dim);
 }
+.field.focused [data-metro] {
+  opacity: 0.42;
+}
 .field.focused [data-origin].lit,
-.field.focused [data-metro].lit {
+.field.focused [data-metro].lit,
+.field.focused [data-metro]:focus-visible {
   opacity: 1;
 }
 /* A hover preview is a whisper, not a selection: the crowd stays up and the lines arrive
    under it. Dimming on hover would make the page flicker as the pointer crosses it. */
 .field.previewing [data-origin] {
   opacity: 0.5;
+}
+/* The plate bakes its labels at font-size 8 in a 1240-unit viewBox, which renders at 7.4px on
+   a 1440 screen — the smallest type on the page, on its primary object, naming the only thing
+   the reader can click. CSS beats the presentation attribute. */
+.field .badge text {
+  font-size: 10.6px;
 }
 
 /* The badges are the control. Nothing about them is redrawn — a transparent disc goes over
@@ -440,8 +476,8 @@
 }
 .beat p {
   margin: 0;
-  font-size: 0.82rem;
-  color: var(--muted);
+  font-size: 0.85rem;
+  color: var(--ink-2);
   line-height: 1.55;
 }
 
@@ -540,8 +576,10 @@
 .ex-direct {
   background: var(--claim);
 }
+/* --rule is 1.27:1 on the ground — under the 3:1 non-text floor, on the mark that draws
+   the piece's whole subject. */
 .ex-sup {
-  border: 1px dashed var(--rule);
+  border: 1px dashed var(--muted);
   border-left: 2px solid var(--ink);
 }
 .readout .note {
@@ -572,26 +610,31 @@
   padding-top: 2.5rem;
   max-width: var(--measure);
 }
+/* The reduction cut the argument and never touched the apparatus, so the caveats ended up
+   outranking the headline: `.limits h2` at 21.6px against an H1 that floors at 16px below
+   1213px wide, with five 16px `h3`s tying it. Roughly 620 words of caveat set larger and
+   higher-contrast than 90 words of finding. Ranked down — the page's total type goes DOWN,
+   which is the direction the reduction was asked for; only the order changes. */
 .limits h2 {
-  margin: 0 0 1.75rem;
-  font-size: 1.35rem;
+  margin: 0 0 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 .limit {
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
 }
 .limit h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 .limit p,
 .method p {
-  margin: 0 0 0.7rem;
-  font-size: 0.9rem;
+  margin: 0 0 0.65rem;
+  font-size: 0.84rem;
   color: var(--ink-2);
-  line-height: 1.65;
+  line-height: 1.6;
 }
 .method {
   border-top: 1px solid var(--rule-soft);
@@ -699,14 +742,24 @@
     order: 4;
     height: auto;
   }
+  /* `display: contents` on .band lifts its children into the hero's own flex order, and the
+     key strip is not one of them — without an explicit order it defaults to 0 and lands above
+     the headline. */
+  .keystrip {
+    order: 5;
+    padding-top: 0.75rem;
+  }
+  .panel .readout {
+    order: 6;
+  }
   .stage .field {
     position: static;
     overflow-x: auto;
     overscroll-behavior-x: contain;
   }
   .stage .field svg {
-    width: 240%;
-    min-width: 760px;
+    width: 300%;
+    min-width: 900px;
     height: auto;
   }
 }
