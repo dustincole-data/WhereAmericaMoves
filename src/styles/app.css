@@ -358,8 +358,25 @@
 }
 
 .field [data-origin],
-.field [data-metro] {
+.field [data-metro],
+.field [data-halo] {
   transition: opacity var(--isolate-ms) ease;
+}
+/* The connective wash goes quiet the moment lines are on screen, and it is a CONTRAST rule,
+   not a taste one. An arrival is drawn in the origin's `read` hue at 0.62 alpha, which is
+   2.33:1 against the bare ground — already under the 3:1 floor before this layer existed,
+   and a pre-existing defect this ticket does not own. Over the wash at full strength the
+   same line measures 2.13:1, so the layer would have made a failing figure worse. At 0.3 it
+   measures 2.37:1 — past the bare-ground baseline, at the worst read hue over the darkest
+   pixel the layer draws. It dims rather than disappears because the wash IS the
+   field's body colour; taking it to 0.09 with the marks turns the plate white on every
+   selection. No `.lit` exception: the crowd at 1 against neighbours at 0.09 already carries
+   the isolation, and one tint held up would spend the whole margin back.
+   `previewing` is a badge hover, not a field hover, so this never fires as the pointer
+   crosses the crowd — the flicker the rule below guards against does not apply. */
+.field.focused [data-halo],
+.field.previewing [data-halo] {
+  opacity: 0.3;
 }
 /* THE BADGES DO NOT GO DOWN WITH THE CROWD, and this is the single most consequential line
    in the file. One rule used to dim `[data-origin]` and `[data-metro]` together to 0.09,
