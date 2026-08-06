@@ -16,11 +16,16 @@
 // gets its own scale and its own label. C's rule is two labelled registers never summed;
 // that is about the labelling, not about which one is on top.
 //
-// The type sits INSIDE the plate, in the two regions the crowd leaves empty — the band
-// above the northern metros and the block off the southern California coast. Measured, not
-// guessed: an occupancy grid over all 863 marks, 869 leaders and 30 badges. That is what
-// buys the map the whole first screen; a headline stacked above it would cost 150px of the
-// one thing the gate asked to see sooner.
+// TYPE AND MAP DO NOT OVERLAP, ruled 2026-08-06 after the first shape gate. The round-1 draw
+// set the headline inside the plate's own empty regions — measured, and clean at rest — but
+// a metro in the north-east throws its heaviest lines straight through that corner, so the
+// composition was only honest until the reader used it. The type moves into a rail and the
+// crowd takes the whole of what is left.
+//
+// That costs map area and the trade is stated rather than hidden: a plate at 1240×812 is
+// squarer than any laptop viewport, so anything stacked ABOVE it shrinks it twice over —
+// once for the height taken and once for the width the aspect then gives back. Beside it,
+// the rail costs width only, and the map still fills the screen top to bottom.
 //
 // The plates still arrive as GEOMETRY ONLY and every sentence on them is below, in the copy
 // module. 36px baked text inside a 1240 viewBox scaled to a 390px screen renders at ~11px,
@@ -100,35 +105,39 @@ const heroData = {
 >
   <Header />
 
-  <!-- ── the hero: the crowd, the type inside it, and the control ── -->
+  <!-- ── the hero: one thin band, and the crowd taking the rest of the screen ── -->
   <section class="hero">
-    <div class="plateBox">
-      <div class="field" id="field" set:html={fieldSvg} />
-      <p class="vh">{HERO_ARIA.text}</p>
+    <div class="band">
+      <h1>{HEADLINE.text}</h1>
+      <p class="sf">{STANDFIRST[0].text} <span>{STANDFIRST[1].text}</span></p>
 
-      <div class="lede">
-        <p class="reg">{REGISTER_FRAME.text}</p>
-        <h1>{HEADLINE.text}</h1>
-        <p class="sf">{STANDFIRST[0].text} <span>{STANDFIRST[1].text}</span></p>
-        <div class="pick">
-          <label class="vh" for="metroPick">{SELECT_LABEL.text}</label>
-          <select id="metroPick">
-            <option value="">{RESET.text}</option>
-            {metros.map((m) => <option value={m.cbsa}>{m.name.text}, {m.state.text}</option>)}
-          </select>
-        </div>
-      </div>
-
+      <!-- One slot, on its own row, holding the invitation at rest and the selected metro's
+           record otherwise — with the band's height fixed, so a click never resizes the map
+           under the pointer. -->
       <div class="panel">
         <p class="atrest" id="atrest">{AT_REST.text}</p>
         {metros.map((m) => <MetroReadout m={m} />)}
       </div>
+
+      <div class="pick">
+        <label class="vh" for="metroPick">{SELECT_LABEL.text}</label>
+        <select id="metroPick">
+          <option value="">{RESET.text}</option>
+          {metros.map((m) => <option value={m.cbsa}>{m.name.text}, {m.state.text}</option>)}
+        </select>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="field" id="field" set:html={fieldSvg} />
+      <p class="vh">{HERO_ARIA.text}</p>
     </div>
   </section>
 
   <div class="wrap">
     <!-- ── the legend for both marks, one block, small ── -->
     <div class="legend">
+      <p class="reg">{REGISTER_FRAME.text}</p>
       <p class="complement">{COMPLEMENT.text}</p>
       {HERO_LINES.map((l) => <p>{l.text}</p>)}
       {LEGEND.map((l) => <p>{l.text}</p>)}
