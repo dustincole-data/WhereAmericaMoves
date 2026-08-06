@@ -7,9 +7,10 @@
 //   PREVENT.  Every text-bearing signature below takes `CopyRecord` and never `string`.
 //             Text that did not come through the copy module cannot be placed on a card.
 //             A type violation says: you bypassed the module.
-//   VERIFY.   Satori returns an SVG string before resvg rasterises it. It is written to
-//             .scan/og/<slug>.svg, so the lint reads the card's actual shipped text — the
-//             30 cards leave the build as PNGs, and the dist scan cannot see inside a PNG.
+//   VERIFY.   The 30 cards leave the build as PNGs and the dist scan cannot see inside a
+//             PNG, so a text-bearing SVG of each card is written to .scan/og/<slug>.svg for
+//             the lint to read. See `toPng`: it takes a deliberate second satori pass,
+//             because the rendered SVG is glyph outlines and readable by nothing.
 //             A scan hit says: a number reached a card anyway.
 //
 // ⚠️ resvg MUST set font.loadSystemFonts:false + fontFiles, and satori needs STATIC font
@@ -21,14 +22,19 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import type { CopyRecord } from '../copy/record';
 
+// The cards are the surface most often seen out of context, so they carry the page's own
+// typeface rather than a stand-in. `archivo-{400,600}.ttf` are woff2-decompressed from
+// `public/fonts/archivo-latin-{400,600}-normal.woff2` — the exact files the page serves —
+// with only the subsetter's mangled name records normalised, so the card and the page
+// cannot show two different Archivos. Change the served woff2 and these must be redone.
 const FONT_DIR = join(process.cwd(), 'og-fonts');
-const SANS = join(FONT_DIR, 'source-sans-3-400.otf');
-const SANS_SB = join(FONT_DIR, 'source-sans-3-600.otf');
+const SANS = join(FONT_DIR, 'archivo-400.ttf');
+const SANS_SB = join(FONT_DIR, 'archivo-600.ttf');
 const MONO = join(FONT_DIR, 'jetbrains-mono-500.ttf');
 
 const FONTS = [
-  { name: 'Source Sans 3', data: readFileSync(SANS), weight: 400 as const, style: 'normal' as const },
-  { name: 'Source Sans 3', data: readFileSync(SANS_SB), weight: 600 as const, style: 'normal' as const },
+  { name: 'Archivo', data: readFileSync(SANS), weight: 400 as const, style: 'normal' as const },
+  { name: 'Archivo', data: readFileSync(SANS_SB), weight: 600 as const, style: 'normal' as const },
   { name: 'JetBrains Mono', data: readFileSync(MONO), weight: 500 as const, style: 'normal' as const },
 ];
 const RESVG_FONT = { loadSystemFonts: false, fontFiles: [SANS, SANS_SB, MONO] };
@@ -51,8 +57,19 @@ const SCAN_DIR = join(process.cwd(), '.scan', 'og');
 
 async function toPng(node: VNode, scanName: string): Promise<Buffer> {
   const svg = await satori(node as never, { width: 1200, height: 630, fonts: FONTS });
+  // Satori embeds every glyph as a <path> outline, so the rendered SVG carries no readable
+  // text at all — and ⑥ strips `d="…"` as geometry, which left the backstop reading nothing
+  // on all 31 cards while claiming to read them. A second pass with `embedFont: false` emits
+  // <text> nodes from the same tree, and it is the scan's copy ONLY: the PNG below still
+  // rasterises from the embedded-glyph SVG above, so shipped pixels are unchanged.
+  const scanSvg = await satori(node as never, {
+    width: 1200,
+    height: 630,
+    fonts: FONTS,
+    embedFont: false,
+  });
   mkdirSync(SCAN_DIR, { recursive: true });
-  writeFileSync(join(SCAN_DIR, `${scanName}.svg`), svg, 'utf8');
+  writeFileSync(join(SCAN_DIR, `${scanName}.svg`), scanSvg, 'utf8');
   return new Resvg(svg, { fitTo: { mode: 'width', value: 1200 }, font: RESVG_FONT }).render().asPng();
 }
 
@@ -70,7 +87,7 @@ const claimRule = (cutFraction: number) =>
   ]);
 
 const footerRow = (line: CopyRecord) =>
-  el('div', { fontFamily: 'Source Sans 3', fontSize: 24, color: MUTED, marginTop: 18 }, line.text);
+  el('div', { fontFamily: 'Archivo', fontSize: 24, color: MUTED, marginTop: 18 }, line.text);
 
 export interface HomeCard {
   eyebrow: CopyRecord;
@@ -92,12 +109,12 @@ export async function renderHomeCard(c: HomeCard): Promise<Buffer> {
         padding: '68px 72px',
         background: GROUND,
         color: INK,
-        fontFamily: 'Source Sans 3',
+        fontFamily: 'Archivo',
       },
       [
         el(
           'div',
-          { fontFamily: 'Source Sans 3', fontSize: 24, color: MUTED, letterSpacing: '0.16em' },
+          { fontFamily: 'Archivo', fontSize: 24, color: MUTED, letterSpacing: '0.16em' },
           c.eyebrow.text.toUpperCase()
         ),
         el(
@@ -152,7 +169,7 @@ export async function renderMetroCard(c: MetroCard): Promise<Buffer> {
         padding: '62px 72px',
         background: GROUND,
         color: INK,
-        fontFamily: 'Source Sans 3',
+        fontFamily: 'Archivo',
       },
       [
         el('div', { display: 'flex', flexDirection: 'column' }, [

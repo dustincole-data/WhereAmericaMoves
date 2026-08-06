@@ -324,8 +324,12 @@ checkRecords(ledger);
 // SVG geometry is excluded because coordinates are apparatus — but only inside the
 // attributes that hold geometry, so a <text> node full of digits is still read.
 
+// `font-weight` joins the list for the same reason `font-size` and `stroke-opacity` did: a
+// type weight is a rendering instruction, not an assertion of quantity. It only started
+// firing once the card scan began emitting real <text> nodes, which is the check reaching a
+// surface it had never actually read.
 const GEOMETRY_ATTRS =
-  /\s(?:d|viewBox|points|transform|gradientTransform|x|y|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|offset|fill|stroke|stop-color|stop-opacity|fill-opacity|stroke-opacity|opacity|stroke-width|stroke-dasharray|font-size|letter-spacing|gradientUnits|id|class|style|href|src|value|content-type)="[^"]*"/g;
+  /\s(?:d|viewBox|points|transform|gradientTransform|x|y|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|offset|fill|stroke|stop-color|stop-opacity|fill-opacity|stroke-opacity|opacity|stroke-width|stroke-dasharray|font-size|font-weight|letter-spacing|gradientUnits|id|class|style|href|src|value|content-type)="[^"]*"/g;
 /** data-* carries the plate's ids and the package stamp; none of it is a rendered figure. */
 const DATA_ATTRS = /\sdata-[a-z-]+="[^"]*"/g;
 /** `content` is scanned everywhere else, because description / og:description / twitter:

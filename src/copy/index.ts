@@ -39,7 +39,7 @@ const N_METROS = UNIVERSE.size;
 /** 06 keeps the title. It poses the question the piece qualifies, and it names no measured
     quantity, so the naming rule does not reach it. */
 export const SITE_NAME = say('Where America Moves', 'apparatus');
-export const HOME_TITLE = say('Where America Moves — what the record cannot say', 'apparatus');
+export const HOME_TITLE = say('Where America Moves: what the record cannot say', 'apparatus');
 export const HOME_DESC = say(
   `${C0003.text} More than one in four of them cannot be put on a map.`,
   'C0003'
@@ -90,7 +90,7 @@ export const COMPLEMENT = say(C0005.text, 'C0005');
 export const LEGEND: CopyRecord[] = [
   say(
     'One mark is one directed pair of metros and its area is people. Hue is where the ' +
-      'destination sits, walked west to east; a leader carries its origin’s colour into its ' +
+      'destination sits, walked west to east; a leader carries its origin’s color into its ' +
       'destination’s and bows right of its own direction of travel.',
     'apparatus'
   ),
@@ -101,7 +101,7 @@ export const LEGEND: CopyRecord[] = [
   say('A missing mark means withheld or absent. It never means zero.', 'apparatus'),
   say(
     'The open mark’s disc is the smallest size this piece draws and its outer hairline is a ' +
-      'marker, not an area. No cell is labelled, ranked or called out.',
+      'marker, not an area. No cell is labeled, ranked or called out.',
     'apparatus'
   ),
 ];
@@ -130,8 +130,8 @@ export const BEAT_RATES: CopyRecord[] = [
   say(
     'Nothing here can be expressed as a share of a place’s population. These counts are tax ' +
       'filers and their dependents; a population is residents. Dividing one by the other mixes ' +
-      'two universes, and the gap between them is each place’s own share of non-filers — which ' +
-      'is not spread evenly across the places a migration story is usually about.',
+      'two universes, and the gap between them is each place’s own share of non-filers. That ' +
+      'share is not spread evenly across the places a migration story is usually about.',
     'apparatus'
   ),
 ];
@@ -229,7 +229,7 @@ export function metroCopy(cbsa: string): MetroCopy {
     name: say(m.short, 'apparatus'),
     state: say(m.state, 'apparatus'),
     full: say(m.full, 'apparatus'),
-    title: say(`${m.short} — Where America Moves`, 'apparatus'),
+    title: say(`${m.short} · Where America Moves`, 'apparatus'),
     ogTitle: say(m.short, 'apparatus'),
     // No verdict word anywhere: `not_claimable` (D0019) says which metros are the net
     // destinations is not claimable, so the sign is printed and never named.
@@ -300,14 +300,14 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
       ),
       say(
         'The numerator and the denominator were different universes. These counts are tax filers ' +
-          'and their dependents — the individuals reported on individual income tax returns. A ' +
+          'and their dependents, the individuals reported on individual income tax returns. A ' +
           'resident population is everyone. Non-filers appear nowhere in the numerator: the very ' +
           'poor, many elderly people, undocumented residents and some students are absent from ' +
           'every figure here, and nothing in this data reveals how many are missing.',
         'apparatus'
       ),
       say(
-        'So every rate ran low, by each place’s own non-filing share — and that share is not ' +
+        'So every rate ran low, by each place’s own non-filing share. And that share is not ' +
           'spread evenly. It is largest exactly where a migration story usually goes looking. ' +
           'A number wrong in a pattern is worse than a number missing, because the pattern is ' +
           'the thing a reader takes away. The toggle is deleted rather than disabled: a ' +
@@ -324,7 +324,7 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
         'The count is claimable and the membership is not. Across the three defensible ways to ' +
           'decide a metro’s direction the count barely moves, but three of the thirty change side. ' +
           'So this piece prints every metro’s own net as a number and never calls one a gainer or ' +
-          'a loser, and no map here colours a metro by direction.',
+          'a loser, and no map here colors a metro by direction.',
         'apparatus'
       ),
     ],
@@ -337,8 +337,8 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
           'specific county pair. That includes moves inside the metro small enough to fall below ' +
           'the disclosure floor, which were therefore never subtracted along with the rest of the ' +
           'internal mass. The split cannot be recovered from this source. It is bounded rather ' +
-          'than unknown — every absent pair is under the floor — but it is not zero, and it is ' +
-          'not the same size in every metro.',
+          'than unknown, since every absent pair is under the floor. But it is not zero, and it ' +
+          'is not the same size in every metro.',
         'apparatus'
       ),
     ],
@@ -353,7 +353,7 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
           'people they exchange would rank them on the same rows this piece then aggregates, so ' +
           'the set would be drawn by the numbers it exists to measure. The IRS did not choose ' +
           'these metros. This project did, and a different thirty would be a different set of ' +
-          'numbers. It is also not a licence to divide by population — resident population ' +
+          'numbers. It is also not a license to divide by population. Resident population ' +
           'selects the units and appears in no figure.',
         'apparatus'
       ),
