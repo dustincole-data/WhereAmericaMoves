@@ -13,16 +13,29 @@
   margin: 0 auto;
   padding: 0 var(--gutter) 4rem;
 }
+/* The hero is full-bleed and the masthead carries its own gutter, so the reading column
+   below only needs its top. On the metro pages the masthead is inside the column. */
+.hero + .wrap {
+  padding-top: 1.5rem;
+}
+.metropage .kicker {
+  padding-inline: 0;
+}
 
 /* ── kicker ─────────────────────────────────────────────────────────────────── */
 
+/* The kicker is now the page's whole masthead and it sits above a full-height map, so it
+   pays for itself in pixels: 72px of padding was 8% of the first screen the gate asked to
+   see sooner. */
 .kicker {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 2rem 0 2.5rem;
-  font-size: 12px;
+  height: var(--headerH);
+  padding: 0 var(--gutter);
+  align-content: center;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
@@ -39,33 +52,145 @@
   color: var(--rule);
 }
 
-/* ── the plate ──────────────────────────────────────────────────────────────── */
+/* ── the hero ───────────────────────────────────────────────────────────────────
+ *
+ * The crowd gets the whole first screen and the type lives inside it. The two overlay
+ * regions are not a composition instinct — they are the two blocks the plate leaves empty,
+ * measured on an occupancy grid over all 863 marks, 869 leaders and 30 badges: a band above
+ * the northern metros (x 26%–100%, y 0–19%) and a block off the southern California coast
+ * (x 0–26%, y 68%–100%). Type placed anywhere else covers a cell.
+ *
+ * The plate is FIT, not sliced. 09's G1 requires every mark's centre to stay inside the
+ * field, so the page may choose the frame but may not crop past the marks — and a slice at
+ * this aspect eats Seattle and Miami first. Fitting costs a little width at very wide
+ * viewports and costs nothing visible, because the margin it leaves is the page's own ground.
+ */
 
-.plate h1 {
-  margin: 0 0 1.25rem;
-  font-size: clamp(2rem, 5.2vw, 3.4rem);
-  font-weight: 600;
-  line-height: 1.06;
-  letter-spacing: -0.028em;
-  max-width: 22ch;
+.hero {
+  height: calc(100svh - var(--headerH));
+  min-height: 460px;
+  position: relative;
+}
+.plateBox {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 1240 / 812;
+  max-width: min(100%, 1900px);
+  margin: 0 auto;
 }
 
-.standfirst {
-  max-width: var(--measure);
-  margin: 0 0 3rem;
+.lede {
+  position: absolute;
+  left: 26.5%;
+  right: 1.6%;
+  top: 1%;
+  z-index: 2;
+  /* A halo, not a card. The band is empty AT REST — but a selected metro in the north-east
+     throws its heaviest lines straight through this corner, and a panel appearing around the
+     headline the moment you click is a worse answer than the one every printed map already
+     uses for a label over a coastline. */
+  text-shadow: 0 0 5px var(--ground), 0 0 5px var(--ground), 0 0 11px var(--ground),
+    0 0 18px var(--ground);
 }
-.standfirst p {
-  margin: 0 0 0.6rem;
-  font-size: clamp(1rem, 1.4vw, 1.125rem);
-  color: var(--ink-2);
-  line-height: 1.6;
-}
-.standfirst p:first-child {
-  color: var(--ink);
-}
-.standfirst p:last-child {
+.lede .reg {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--muted);
-  font-size: 0.95rem;
+}
+/* Small on purpose. The gate's objection was not that the sentence was wrong — it is 06's
+   ruled headline — but that it was set at 54px above a map nobody had reached yet. */
+.lede h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.05rem, 1.75vw, 1.6rem);
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: -0.024em;
+  max-width: 30ch;
+}
+.lede .sf {
+  margin: 0;
+  font-size: clamp(0.78rem, 0.95vw, 0.9rem);
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 60ch;
+}
+.lede .sf span {
+  color: var(--muted);
+}
+.pick {
+  margin-top: 0.8rem;
+}
+
+/* The panel is a card because it is the one thing allowed to sit over the crowd: at
+   selection the crowd behind it is already dimmed, and the alternative is a readout squeezed
+   into 200px of clear ocean. */
+.panel {
+  position: absolute;
+  left: 1.2%;
+  bottom: 2%;
+  width: 25%;
+  min-width: 232px;
+  max-height: 34%;
+  overflow: auto;
+  z-index: 2;
+  background: color-mix(in srgb, var(--ground) 90%, transparent);
+  backdrop-filter: blur(3px);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem 0.8rem;
+}
+.panel .readout {
+  border-top: none;
+  padding-top: 0;
+}
+.panel .rhead h2 {
+  font-size: 1.02rem;
+}
+.panel .rhead .unit {
+  margin: 0.25rem 0 0.7rem;
+  font-size: 0.7rem;
+}
+.panel .cells {
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.panel .cells .lab {
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+}
+.panel .cells .fig {
+  font-size: 0.92rem;
+}
+.panel .rest {
+  padding-top: 0.55rem;
+  margin-bottom: 0.6rem;
+}
+.panel .rrow {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.panel .rrow .rlab {
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+}
+.panel .extent {
+  height: 7px;
+  margin-bottom: 0;
+}
+/* The note is on the extent's aria-label and on all thirty metro pages. In a 230px card it
+   is four lines of small grey text under the one mark that matters. */
+.panel .readout .note {
+  display: none;
+}
+.panel .atrest {
+  margin: 0;
+  padding: 0.15rem 0 0.2rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-2);
 }
 
 .register {
@@ -132,13 +257,22 @@
   line-height: 1.4;
 }
 
-/* ── the field ──────────────────────────────────────────────────────────────── */
+/* ── the field, and the mark drawn on top of it ─────────────────────────────── */
 
-.fieldfig {
-  margin: 0 0 4rem;
+/* Absolute only inside the hero, where it fills a box the page gave the plate's own aspect
+   ratio. The thirty metro pages draw the same plate in ordinary flow. */
+.plateBox .field {
+  position: absolute;
+  inset: 0;
+}
+.plateBox .field svg {
+  height: 100%;
 }
 /* Full bleed. 09's route 2 draws the crowd cropped by the plate edge rather than floating
    in a moat, and the wrap's gutter was putting it back in one. */
+.fieldfig {
+  margin: 0 0 3rem;
+}
 .fieldfig .field {
   width: 100vw;
   margin-left: 50%;
@@ -151,6 +285,7 @@
 }
 .field text {
   font-family: var(--font-sans);
+  pointer-events: none;
 }
 
 .field [data-origin],
@@ -165,110 +300,110 @@
 .field.focused [data-metro].lit {
   opacity: 1;
 }
+/* A hover preview is a whisper, not a selection: the crowd stays up and the lines arrive
+   under it. Dimming on hover would make the page flicker as the pointer crosses it. */
+.field.previewing [data-origin] {
+  opacity: 0.5;
+}
+
+/* The badges are the control. Nothing about them is redrawn — a transparent disc goes over
+   each one so the target is finger-sized, and the ring the plate already drew is what
+   thickens when it is chosen. */
+.field .badge {
+  cursor: pointer;
+}
+.field .badge:focus {
+  outline: none;
+}
+.field .badge:focus-visible circle:nth-of-type(2) {
+  stroke-width: 4;
+}
+.field .badge.sel circle:nth-of-type(2) {
+  stroke-width: 4.5;
+}
+.field .lines {
+  pointer-events: none;
+}
+.field .ln-out,
+.field .ln-in,
+.field .ln-absent {
+  pointer-events: none;
+}
 
 .legend {
   max-width: var(--measure);
-  margin-top: 1.25rem;
+  margin-top: 1.6rem;
+  margin-bottom: 2.5rem;
 }
 .legend p {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
   color: var(--muted);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 .legend .complement {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   color: var(--ink);
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
-/* ── the beats ──────────────────────────────────────────────────────────────── */
+/* ── the claim register, now under the map ──────────────────────────────────── */
 
-.beat {
+.claimsec {
+  margin-bottom: 3rem;
+}
+.claimsec .withheld {
+  margin: 0 0 0.4rem;
   max-width: var(--measure);
-  margin: 0 0 3.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--rule);
-}
-.beat h2 {
-  margin: 0 0 0.85rem;
-  font-size: clamp(1.4rem, 2.6vw, 2rem);
-  font-weight: 600;
-  letter-spacing: -0.022em;
-  line-height: 1.12;
-}
-.beat p {
-  margin: 0 0 0.85rem;
-  color: var(--ink-2);
-  line-height: 1.65;
-}
-
-/* ── the explorer, subordinated ─────────────────────────────────────────────── */
-
-.explorer {
-  padding-top: 2rem;
-  border-top: 1px solid var(--rule);
-  margin-bottom: 3.5rem;
-}
-.explorer h2 {
-  margin: 0 0 0.5rem;
-  font-size: clamp(1.3rem, 2.2vw, 1.7rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.explorer .lead {
-  max-width: var(--measure);
-  margin: 0 0 1.75rem;
-  color: var(--ink-2);
-}
-
-.exgrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: clamp(1.5rem, 4vw, 3rem);
-  align-items: start;
-}
-@media (max-width: 820px) {
-  .exgrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.selectwrap {
-  margin-bottom: 0.75rem;
-}
-#metroPick {
-  font: inherit;
   font-size: 0.9rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  max-width: 100%;
+  line-height: 1.55;
+  color: var(--ink-2);
 }
-#map {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-#map g.dot {
-  cursor: pointer;
-}
-.hint {
-  margin: 0.4rem 0 0;
+.claimsec .floor {
+  margin: 0;
   font-size: 0.8rem;
   color: var(--muted);
 }
 
-.expanel {
-  min-height: 18rem;
+/* ── the three remaining beats, as captions ─────────────────────────────────── */
+
+.beats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--rule);
+  margin-bottom: 3rem;
 }
-.atrest {
+@media (max-width: 720px) {
+  .beats {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+}
+.beat h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+}
+.beat p {
   margin: 0;
-  padding: 1.25rem 0;
+  font-size: 0.82rem;
   color: var(--muted);
-  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+#metroPick {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--ink);
+  max-width: 100%;
 }
 
 /* ── the metro readout ──────────────────────────────────────────────────────── */
@@ -428,12 +563,73 @@
 
 /* ── phone ──────────────────────────────────────────────────────────────────── */
 
+/* ── the hero, stacked ──────────────────────────────────────────────────────────
+ *
+ * The overlay composition needs the plate's empty regions to be bigger than a sentence, and
+ * below about 720px they are not. So the three parts stack, in the order the ruling put
+ * them: the sentence, the map, the record.
+ *
+ * And the map scrolls sideways instead of shrinking. At 390px a 1240-unit plate renders its
+ * badges at 13px across and its labels at 2.5px — the shipped page answered that by deleting
+ * the labels, which costs the *crowd with landmarks* property 03 locked and leaves a phone
+ * reader thirty anonymous rings they cannot hit. Drawn at 2.4× the viewport the badges are
+ * finger-sized and the names are back; the cost is that the whole country is not on screen
+ * at once, which is what a map does on a phone.
+ */
+@media (max-width: 720px) {
+  .hero {
+    height: auto;
+    min-height: 0;
+  }
+  .plateBox {
+    aspect-ratio: auto;
+    height: auto;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .lede {
+    position: static;
+    order: 1;
+    padding: 0 var(--gutter) 0.85rem;
+  }
+  .lede h1 {
+    font-size: 1.2rem;
+    max-width: none;
+  }
+  .plateBox .field {
+    position: static;
+    order: 2;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  .plateBox .field svg {
+    width: 240%;
+    min-width: 760px;
+    height: auto;
+  }
+  .panel {
+    position: static;
+    order: 3;
+    width: auto;
+    min-width: 0;
+    max-height: none;
+    margin: 0.9rem var(--gutter) 0;
+    backdrop-filter: none;
+  }
+  .panel .readout .note {
+    display: block;
+    margin-top: 0.6rem;
+  }
+}
+
 @media (max-width: 640px) {
   /* The kicker's separator dangles once the source line wraps, so the two parts stack and
      the dot goes. */
   .kicker {
     display: block;
-    padding-bottom: 1.75rem;
+    height: auto;
+    padding: 0.8rem var(--gutter) 1rem;
   }
   .kicker .sep {
     display: none;
@@ -447,14 +643,6 @@
   .register {
     font-size: 10px;
     letter-spacing: 0.02em;
-  }
-
-  /* At 390px the 1240-unit field renders its 8px metro labels at ~2.5px. The plate is still
-     the hero and still legible AS A CROWD, which is what it encodes; the labels are
-     landmarks and they go. This is the layout problem the geometry-only plate bought, in
-     exchange for a headline that is readable at all. */
-  .field text {
-    display: none;
   }
   .claimcap {
     min-height: 0;

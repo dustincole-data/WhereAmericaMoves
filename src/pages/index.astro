@@ -1,15 +1,28 @@
 ---
-// The arc: ① the withheld quarter → ② no county won → ③ no rates → ④ the pairs with no
-// disclosed flow. Then the explorer, subordinated. Then the limits.
+// THE SHAPE, rebuilt after 12's gate. What changed and what did not:
 //
-// One route, no scrollytelling, and the ruling was made on the beat inventory rather than
-// on taste: ① is drawn (the claim bar), ④ is already drawn inside the crowd as open marks
-// at the smallest disclosed size, and ② and ③ have no frame in the package to draw at all.
-// Three of four beats have nothing to animate to, so scroll would drive text opacity only
-// — and it would buy the whole scroll-smoothing verification problem for a piece whose
-// subject is a static record.
+// The built page ran ① the claim register → ② no county won → ③ no rates → ④ the absent
+// pairs → the explorer, five screens down. It was rejected on three things — too much text
+// at too large a size, the map arriving late, and a hero that did not answer the reader —
+// and 06's addendum of 2026-08-06 reopened exactly the three rows that produced them: the
+// arc's order, the explorer's separation, and prose volume. THE SUBJECT DID NOT REOPEN.
+// 03's P2 holds: this is a piece about the record. What changed is that the reader now
+// reaches the record by touching the map instead of by reading a paragraph above it.
 //
-// The two plates arrive as GEOMETRY ONLY and every sentence on them is below, in the copy
+// So the crowd is first, full height, and it is the control. Select a metro and its own
+// record is drawn — every direction it sends people, every direction it receives them, and
+// the directions the publisher disclosed nothing for, drawn empty. The claim register that
+// used to open the page is directly beneath it, which is where the withheld quarter still
+// gets its own scale and its own label. C's rule is two labelled registers never summed;
+// that is about the labelling, not about which one is on top.
+//
+// The type sits INSIDE the plate, in the two regions the crowd leaves empty — the band
+// above the northern metros and the block off the southern California coast. Measured, not
+// guessed: an occupancy grid over all 863 marks, 869 leaders and 30 badges. That is what
+// buys the map the whole first screen; a headline stacked above it would cost 150px of the
+// one thing the gate asked to see sooner.
+//
+// The plates still arrive as GEOMETRY ONLY and every sentence on them is below, in the copy
 // module. 36px baked text inside a 1240 viewBox scaled to a 390px screen renders at ~11px,
 // so a baked headline is unreadable on a phone by construction.
 import Layout from '../layouts/Layout.astro';
@@ -17,7 +30,8 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MetroReadout from '../components/MetroReadout.astro';
 import { METROS } from '../lib/metros';
-import { assertPlate, TOTALS_BY_CBSA } from '../lib/package';
+import { assertPlate, RELATIONS } from '../lib/package';
+import { readPlate } from '../lib/plate';
 import { metroCopy } from '../copy';
 import {
   HOME_TITLE,
@@ -25,6 +39,8 @@ import {
   SITE_NAME,
   HEADLINE,
   STANDFIRST,
+  WITHHELD_LINE,
+  FLOOR_NOTE,
   REGISTER_CLAIM,
   BAR_DISCLOSED,
   BAR_WITHHELD,
@@ -32,13 +48,10 @@ import {
   REGISTER_FRAME,
   COMPLEMENT,
   LEGEND,
+  HERO_LINES,
   BEAT_COUNTY,
   BEAT_RATES,
   BEAT_ABSENT,
-  EXPLORER_TITLE,
-  EXPLORER_LEAD,
-  MAP_HINT,
-  MAP_ARIA,
   HERO_ARIA,
   SELECT_LABEL,
   AT_REST,
@@ -55,29 +68,26 @@ const claimSvg = assertPlate(claimSvgRaw, '09-claim.svg');
 const fieldSvg = assertPlate(fieldSvgRaw, '09-field.svg');
 const cut = Number(/data-cut="([\d.]+)"/.exec(claimSvg)![1]);
 
+// Hubs and absent pairs are READ OFF THE PLATE rather than re-projected, so the lines cannot
+// drift away from the crowd they connect. See lib/plate.ts.
+const plate = readPlate(fieldSvg, '09-field.svg');
+
 const site = Astro.site!;
 const canonical = new URL('/', site).href;
 const ogImage = new URL('/og/index.png', site).href;
 
 const metros = METROS.map((m) => metroCopy(m.cbsa));
-const hueOf = (cbsa: string) => (hues.metros as Record<string, { read: string }>)[cbsa].read;
 
-// The explorer's payload, inlined rather than fetched. 10's open question — inline vs fetch
-// for the browser payload — resolves to inline, which also deletes the generated
-// `public/data/` artifact and the loading string it would have needed. It carries no copy:
-// every string on this page is server-rendered, so the client constructs nothing and the
-// dist scan reads the real text rather than a template.
-const mapData = METROS.map((m, i) => {
-  const t = TOTALS_BY_CBSA.get(m.cbsa)!;
-  return {
-    cbsa: m.cbsa,
-    lat: m.lat,
-    lon: m.lon,
-    through: t.total_in + t.total_out, // drawn, never printed: a mark may aggregate its own cells
-    hue: hueOf(m.cbsa),
-    aria: metros[i].aria.text,
-  };
-});
+// The hero's payload, inlined rather than fetched. It carries NO COPY: every string on this
+// page is server-rendered, so the client constructs nothing and the dist scan reads the real
+// text rather than a template.
+const heroData = {
+  viewBox: plate.viewBox,
+  hubs: plate.hubs,
+  hues: hues.metros,
+  pairs: RELATIONS.map((r) => [r.origin, r.dest, r.people]),
+  absent: plate.absent,
+};
 ---
 
 <Layout
@@ -88,16 +98,44 @@ const mapData = METROS.map((m, i) => {
   ogImage={ogImage}
   canonical={canonical}
 >
-  <div class="wrap">
-    <Header />
+  <Header />
 
-    <!-- ── the plate ── -->
-    <section class="plate">
-      <h1>{HEADLINE.text}</h1>
-      <div class="standfirst">
-        {STANDFIRST.map((s) => <p>{s.text}</p>)}
+  <!-- ── the hero: the crowd, the type inside it, and the control ── -->
+  <section class="hero">
+    <div class="plateBox">
+      <div class="field" id="field" set:html={fieldSvg} />
+      <p class="vh">{HERO_ARIA.text}</p>
+
+      <div class="lede">
+        <p class="reg">{REGISTER_FRAME.text}</p>
+        <h1>{HEADLINE.text}</h1>
+        <p class="sf">{STANDFIRST[0].text} <span>{STANDFIRST[1].text}</span></p>
+        <div class="pick">
+          <label class="vh" for="metroPick">{SELECT_LABEL.text}</label>
+          <select id="metroPick">
+            <option value="">{RESET.text}</option>
+            {metros.map((m) => <option value={m.cbsa}>{m.name.text}, {m.state.text}</option>)}
+          </select>
+        </div>
       </div>
 
+      <div class="panel">
+        <p class="atrest" id="atrest">{AT_REST.text}</p>
+        {metros.map((m) => <MetroReadout m={m} />)}
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <!-- ── the legend for both marks, one block, small ── -->
+    <div class="legend">
+      <p class="complement">{COMPLEMENT.text}</p>
+      {HERO_LINES.map((l) => <p>{l.text}</p>)}
+      {LEGEND.map((l) => <p>{l.text}</p>)}
+    </div>
+
+    <!-- ── the claim register: the withheld quarter, on its own scale ── -->
+    <section class="claimsec">
       <p class="register">{REGISTER_CLAIM.text}</p>
       <figure class="claimfig" style={`--cut:${(cut * 100).toFixed(3)}%`}>
         <div class="claimwrap">
@@ -111,67 +149,27 @@ const mapData = METROS.map((m, i) => {
           </span>
         </figcaption>
       </figure>
-
-      <p class="register">{REGISTER_FRAME.text}</p>
-      <figure class="fieldfig">
-        <div class="field" id="field" role="img" aria-label={HERO_ARIA.text} set:html={fieldSvg} />
-        <figcaption class="legend">
-          <p class="complement">{COMPLEMENT.text}</p>
-          {LEGEND.map((l) => <p>{l.text}</p>)}
-        </figcaption>
-      </figure>
+      <p class="withheld">{WITHHELD_LINE.text}</p>
+      <p class="floor">{FLOOR_NOTE.text}</p>
     </section>
 
-    <!-- ── beat ② ── -->
-    <section class="beat">
-      <h2>{BEAT_COUNTY[0].text}</h2>
-      {BEAT_COUNTY.slice(1).map((p) => <p>{p.text}</p>)}
-    </section>
-
-    <!-- ── beat ③ ── -->
-    <section class="beat">
-      <h2>{BEAT_RATES[0].text}</h2>
-      {BEAT_RATES.slice(1).map((p) => <p>{p.text}</p>)}
-    </section>
-
-    <!-- ── beat ④ ── -->
-    <section class="beat">
-      <h2>{BEAT_ABSENT[0].text}</h2>
-      {BEAT_ABSENT.slice(1).map((p) => <p>{p.text}</p>)}
-    </section>
-
-    <!-- ── the explorer, subordinated ── -->
-    <section class="explorer" id="explorer">
-      <h2>{EXPLORER_TITLE.text}</h2>
-      <p class="lead">{EXPLORER_LEAD.text}</p>
-
-      <div class="exgrid">
-        <div class="exmap">
-          <div class="selectwrap">
-            <label class="vh" for="metroPick">{SELECT_LABEL.text}</label>
-            <select id="metroPick">
-              <option value="">{RESET.text}</option>
-              {metros.map((m) => <option value={m.cbsa}>{m.name.text}, {m.state.text}</option>)}
-            </select>
-          </div>
-          <svg id="map" viewBox="0 0 640 400" role="img" aria-label={MAP_ARIA.text}></svg>
-          <p class="hint">{MAP_HINT.text}</p>
-        </div>
-
-        <div class="expanel">
-          <p class="atrest" id="atrest">{AT_REST.text}</p>
-          {metros.map((m) => <MetroReadout m={m} />)}
-        </div>
-      </div>
-    </section>
+    <!-- ── the three remaining beats, as captions ── -->
+    <div class="beats">
+      {[BEAT_COUNTY, BEAT_RATES, BEAT_ABSENT].map((b) => (
+        <section class="beat">
+          <h2>{b[0].text}</h2>
+          {b.slice(1).map((p) => <p>{p.text}</p>)}
+        </section>
+      ))}
+    </div>
 
     <Footer />
   </div>
 
   <div class="vh" id="live" aria-live="polite"></div>
 
-  <script type="application/json" id="map-data" set:html={JSON.stringify(mapData)} is:inline></script>
+  <script type="application/json" id="hero-data" set:html={JSON.stringify(heroData)} is:inline></script>
   <script>
-    import '../lib/explorer.ts';
+    import '../lib/hero.ts';
   </script>
 </Layout>

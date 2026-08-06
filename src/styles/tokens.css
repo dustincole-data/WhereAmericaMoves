@@ -36,6 +36,9 @@
   --gutter: clamp(18px, 5vw, 56px);
   --measure: 62ch;
   --radius: 8px;
+  /* The masthead's height, subtracted from the viewport so the crowd gets the rest of the
+     first screen exactly. A guessed value here shows up as a scrollbar on the hero. */
+  --headerH: 44px;
 
   /* ── Motion — near-zero budget ── */
   --isolate-ms: 120ms;

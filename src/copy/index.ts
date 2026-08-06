@@ -54,18 +54,24 @@ export const HOME_DESC = say(
     filing address. The lint rules on both mechanically now. */
 export const HEADLINE = say('More than one in four of them cannot be put on a map.', 'C0003');
 
+/** Two records, where the built page had four. The gate's first objection was volume, and
+    the two that went were not cut for length: both were saying at the top of the page what
+    the drawing says lower down. The withheld figure is the claim register's own caption, and
+    the floor is the note under it. Nothing is lost; it stops being said twice. */
 export const STANDFIRST: CopyRecord[] = [
   say(C0003.text, 'C0003'),
   say('They are tax filers and their dependents, not residents.', 'apparatus'),
-  say(
-    `${fmtInt(WITHHELD)} of them are inside that total and outside every map of it: counted, and attributable to no pair of counties.`,
-    'C0003'
-  ),
-  say(
-    `The IRS withholds any county-to-county flow below ${MANIFEST.source.disclosure_floor.value} returns.`,
-    'apparatus'
-  ),
 ];
+
+export const WITHHELD_LINE = say(
+  `${fmtInt(WITHHELD)} of them are inside that total and outside every map of it: counted, and attributable to no pair of counties.`,
+  'C0003'
+);
+
+export const FLOOR_NOTE = say(
+  `The IRS withholds any county-to-county flow below ${MANIFEST.source.disclosure_floor.value} returns.`,
+  'apparatus'
+);
 
 export const REGISTER_CLAIM = say('The claim · one row · gate-confirmed · C0003', 'apparatus');
 export const BAR_DISCLOSED = say('attributable to a specific pair of counties', 'apparatus');
@@ -76,10 +82,12 @@ export const BAR_WITHHELD_SUB: CopyRecord[] = [
 ];
 
 /** The frame is a different universe and the register line has to say so, or the crowd
-    reads as a part of the bar above it. */
+    reads as a part of the bar. The crowd now comes first, so the bar it is not a part of is
+    below it rather than above — C's two-labelled-registers rule is about the labelling, not
+    about which one is on top. */
 export const REGISTER_FRAME = say(
-  `The frame · a different universe, not a part of the bar above · ` +
-    `${fmtInt(frameMeta('top_metro_relations').rows)} disclosed pairs among the ${N_METROS} metros in this piece · area is people`,
+  `The frame · ${fmtInt(frameMeta('top_metro_relations').rows)} disclosed pairs among these ${N_METROS} metros · ` +
+    `a different universe from the bar below`,
   'top_metro_relations'
 );
 
@@ -90,18 +98,27 @@ export const COMPLEMENT = say(C0005.text, 'C0005');
 export const LEGEND: CopyRecord[] = [
   say(
     'One mark is one directed pair of metros and its area is people. Hue is where the ' +
-      'destination sits, walked west to east; a leader carries its origin’s color into its ' +
-      'destination’s and bows right of its own direction of travel.',
+      'destination sits, walked west to east. No cell is labeled, ranked or called out.',
     'apparatus'
   ),
   say(
     `${ABSENT_PAIRS} of ${FRAME_PAIRS} directed pairs have no disclosed flow at all, drawn open on an empty leader.`,
     'C0005'
   ),
-  say('A missing mark means withheld or absent. It never means zero.', 'apparatus'),
+];
+
+/** The new mark's legend. The lines exist only under selection, which is the whole reason
+    they are not the chord 03 killed three times: there is no state in which every pair is
+    drawn at once, so the middle has nothing to go to mush with. */
+export const HERO_LINES: CopyRecord[] = [
   say(
-    'The open mark’s disc is the smallest size this piece draws and its outer hairline is a ' +
-      'marker, not an area. No cell is labeled, ranked or called out.',
+    'Each line is one direction between two metros, drawn at the flow the publisher ' +
+      'disclosed: heavy where it leaves, fine where it arrives. Arrivals run beneath as hairlines.',
+    'apparatus'
+  ),
+  say(
+    'A dashed line to an open ring is a direction the record discloses nothing for. It means ' +
+      'withheld or absent. It never means zero.',
     'apparatus'
   ),
 ];
@@ -115,12 +132,10 @@ export const LEGEND: CopyRecord[] = [
 export const BEAT_COUNTY: CopyRecord[] = [
   say('No county won.', 'apparatus'),
   say(
-    'This record cannot say which county gained the most people. Not the biggest net gain, ' +
-      'not the fastest-growing county, not a ranked top ten. Across the defensible ways to ' +
-      'compute a county’s net migration, the leading county changes.',
+    'Across the defensible ways to compute a county’s net migration, the county in front ' +
+      'changes. The instability is the finding.',
     'apparatus'
   ),
-  say('The instability is the finding. The superlative is not available.', 'apparatus'),
 ];
 
 // ── beat ③ · no rates ──────────────────────────────────────────────────────────
@@ -128,10 +143,8 @@ export const BEAT_COUNTY: CopyRecord[] = [
 export const BEAT_RATES: CopyRecord[] = [
   say('No rates.', 'apparatus'),
   say(
-    'Nothing here can be expressed as a share of a place’s population. These counts are tax ' +
-      'filers and their dependents; a population is residents. Dividing one by the other mixes ' +
-      'two universes, and the gap between them is each place’s own share of non-filers. That ' +
-      'share is not spread evenly across the places a migration story is usually about.',
+    'Nothing here can be a share of a place’s population. These counts are filers; a ' +
+      'population is residents. Dividing one by the other mixes two universes.',
     'apparatus'
   ),
 ];
@@ -142,35 +155,25 @@ export const BEAT_ABSENT: CopyRecord[] = [
   say(`${ABSENT_PAIRS} of ${FRAME_PAIRS} pairs are not there.`, 'C0005'),
   say(
     `Between every two of these ${N_METROS} metros there is a direction people could travel, and ` +
-      `for ${ABSENT_PAIRS} of those directions the record discloses no flow at all.`,
+      `for ${ABSENT_PAIRS} of those directions the record discloses no flow at all. Select either ` +
+      `end and the line is drawn empty.`,
     'C0005'
-  ),
-  say(
-    'They are drawn: open marks, at the smallest size this piece draws, on an empty leader. ' +
-      'An absent pair means withheld or absent, never zero.',
-    'apparatus'
   ),
 ];
 
-// ── the explorer ───────────────────────────────────────────────────────────────
+// ── the hero's own controls ────────────────────────────────────────────────────
+// There is no explorer section any more. The crowd is the selector: the reader picks a
+// landmark inside the picture rather than scrolling past four beats to a second chart of
+// the same country. `EXPLORER_TITLE`, `EXPLORER_LEAD`, `MAP_HINT` and `MAP_ARIA` are gone
+// with the section they titled.
 
-export const EXPLORER_TITLE = say('Thirty metros, thirty different records', 'apparatus');
-export const EXPLORER_LEAD = say(
-  `Each of the ${N_METROS} metros in this piece carries its own share of moves the publisher ` +
-    `did not attach to any specific county pair, and they are not alike. Pick one.`,
-  'apparatus'
-);
-export const MAP_HINT = say('Mark area is people moving in and out. Hue is where the metro is.', 'apparatus');
-export const MAP_ARIA = say(
-  'The 30 metros in this piece, on a U.S. basemap. Tab to a metro, or use the menu above, to select it.',
-  'apparatus'
-);
 export const HERO_ARIA = say(
-  'Every disclosed directed pair among these metros, one mark each, at real geography. Mark area is people.',
+  'Every disclosed directed pair among these metros, one mark each, at real geography. ' +
+    'Mark area is people. Tab to a metro to draw its own record.',
   'apparatus'
 );
 export const SELECT_LABEL = say('Choose a metro', 'apparatus');
-export const AT_REST = say('No metro selected. The whole crowd is lit.', 'apparatus');
+export const AT_REST = say('Select a metro to draw where its people went.', 'apparatus');
 export const RESET = say('Show every metro', 'apparatus');
 
 // ── the metro readout ──────────────────────────────────────────────────────────
