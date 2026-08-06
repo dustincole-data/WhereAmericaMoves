@@ -404,9 +404,24 @@
 }
 /* The plate bakes its labels at font-size 8 in a 1240-unit viewBox, which renders at 7.4px on
    a 1440 screen — the smallest type on the page, on its primary object, naming the only thing
-   the reader can click. CSS beats the presentation attribute. */
+   the reader can click. CSS beats the presentation attribute.
+   THE NUMBER HAS A CEILING AND 10.6 WAS OVER IT. A badge's radius is computed from the
+   8-unit metric — `max(18, half the widest line + 6)` — so bumping the type here without
+   touching the ring is the page overflowing a shape the plate sized for something smaller:
+   at 10.6 (1.325×) fourteen of the thirty labels sat outside their own ring, worst San
+   Francisco by 2.6 units. No plate check can catch it; F1 measures the plate at its own
+   scale, where it passes. Raising the plate to 10.6 instead is not free — it takes the
+   largest badge 32.4 → 41.0, the hub displacement 2.48% → 3.39% against G2's 3.5% bar, and
+   leaves 7 marks sharing a footprint, so it is a relaxation retune, not a number swap.
+   The generator's own metric put the ceiling at 9.67, and the BROWSER DISAGREES — its
+   Archivo is a little wider than `text_w()`'s per-character approximation, so 9.6 measured
+   0/30 outside on desktop and still 1/30 on a phone (San Antonio, by 0.27px). Measured, not
+   trusted: half-width against the rendered radius, the same rule the ring was sized with, at
+   both widths. 9.2 is 0/30 at both with ≥1.36px of air, and is still 15% above the plate's
+   baked 8. Numbers at 10.6 for comparison: 11/30 outside on desktop, 10/30 on a phone,
+   worst San Antonio by 2.45px. */
 .field .badge text {
-  font-size: 10.6px;
+  font-size: 9.2px;
 }
 
 /* The badges are the control. Nothing about them is redrawn — a transparent disc goes over
