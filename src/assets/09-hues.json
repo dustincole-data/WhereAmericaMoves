@@ -1,156 +1,186 @@
 {
  "metros": {
   "12060": {
-   "hub": "#a60022",
-   "read": "#bf0029",
-   "wash": "#d66162"
+   "hub": "#007a3d",
+   "line": "#93d1a4",
+   "read": "#007a3d",
+   "wash": "#93d1a4"
   },
   "12420": {
-   "hub": "#800059",
-   "read": "#970069",
-   "wash": "#b5508b"
+   "hub": "#710068",
+   "line": "#b983b0",
+   "read": "#710068",
+   "wash": "#b983b0"
   },
   "12580": {
-   "hub": "#aa1900",
-   "read": "#c21f00",
-   "wash": "#db6954"
+   "hub": "#00897f",
+   "line": "#8ae7dc",
+   "read": "#00897f",
+   "wash": "#8ae7dc"
   },
   "14460": {
-   "hub": "#a23a00",
-   "read": "#b84400",
-   "wash": "#de7346"
+   "hub": "#0091ab",
+   "line": "#8fe7fe",
+   "read": "#0091ab",
+   "wash": "#8fe7fe"
   },
   "16740": {
-   "hub": "#ad0400",
-   "read": "#c60700",
-   "wash": "#da6857"
+   "hub": "#008164",
+   "line": "#8bddc0",
+   "read": "#008164",
+   "wash": "#8bddc0"
   },
   "16980": {
-   "hub": "#920046",
-   "read": "#aa0052",
-   "wash": "#c6567a"
+   "hub": "#ab0022",
+   "line": "#e79d99",
+   "read": "#ab0022",
+   "wash": "#e79d99"
   },
   "17140": {
-   "hub": "#9e0033",
-   "read": "#b7003d",
-   "wash": "#d05c6b"
+   "hub": "#00782b",
+   "line": "#95cd9c",
+   "read": "#00782b",
+   "wash": "#95cd9c"
   },
   "19100": {
-   "hub": "#800059",
-   "read": "#970069",
-   "wash": "#b5508b"
+   "hub": "#780063",
+   "line": "#c085ae",
+   "read": "#780063",
+   "wash": "#c085ae"
   },
   "19740": {
-   "hub": "#5d0072",
-   "read": "#700089",
-   "wash": "#8e4ba2"
+   "hub": "#41007c",
+   "line": "#8c79b5",
+   "read": "#41007c",
+   "wash": "#8c79b5"
   },
   "19820": {
-   "hub": "#9d0034",
-   "read": "#b6003e",
-   "wash": "#d05c6c"
+   "hub": "#00793c",
+   "line": "#93d1a3",
+   "read": "#00793c",
+   "wash": "#93d1a3"
   },
   "26420": {
-   "hub": "#880051",
-   "read": "#a0005f",
-   "wash": "#bd5283"
+   "hub": "#82005b",
+   "line": "#c888ab",
+   "read": "#82005b",
+   "wash": "#c888ab"
   },
   "29820": {
-   "hub": "#35007d",
-   "read": "#43009a",
-   "wash": "#604baa"
+   "hub": "#001c34",
+   "line": "#366e99",
+   "read": "#001c34",
+   "wash": "#366e99"
   },
   "31080": {
-   "hub": "#23007d",
-   "read": "#2e009c",
-   "wash": "#4b4ba9"
+   "hub": "#001620",
+   "line": "#076986",
+   "read": "#001620",
+   "wash": "#076986"
   },
   "33100": {
-   "hub": "#a04100",
-   "read": "#b64b00",
-   "wash": "#df7641"
+   "hub": "#00887b",
+   "line": "#8ae5d7",
+   "read": "#00887b",
+   "wash": "#8ae5d7"
   },
   "33460": {
-   "hub": "#7e005b",
-   "read": "#94006c",
-   "wash": "#b3508d"
+   "hub": "#8d0051",
+   "line": "#d28ca7",
+   "read": "#8d0051",
+   "wash": "#d28ca7"
   },
   "35620": {
-   "hub": "#a43300",
-   "read": "#bb3b00",
-   "wash": "#dd6f4b"
+   "hub": "#008e90",
+   "line": "#8beaec",
+   "read": "#008e90",
+   "wash": "#8beaec"
   },
   "36740": {
-   "hub": "#a43200",
-   "read": "#bb3b00",
-   "wash": "#dd6f4b"
+   "hub": "#00836b",
+   "line": "#8ae0c7",
+   "read": "#00836b",
+   "wash": "#8ae0c7"
   },
   "37980": {
-   "hub": "#a43300",
-   "read": "#bb3b00",
-   "wash": "#dd6f4b"
+   "hub": "#008c89",
+   "line": "#8beae6",
+   "read": "#008c89",
+   "wash": "#8beae6"
   },
   "38060": {
-   "hub": "#44007b",
-   "read": "#540096",
-   "wash": "#714ba9"
+   "hub": "#001e4a",
+   "line": "#4c71a3",
+   "read": "#001e4a",
+   "wash": "#4c71a3"
   },
   "38300": {
-   "hub": "#a8001b",
-   "read": "#c10021",
-   "wash": "#d7635f"
+   "hub": "#008162",
+   "line": "#8cdcbe",
+   "read": "#008162",
+   "wash": "#8cdcbe"
   },
   "38900": {
-   "hub": "#0e007c",
-   "read": "#15009c",
-   "wash": "#344ba5"
+   "hub": "#00161f",
+   "line": "#006983",
+   "read": "#00161f",
+   "wash": "#006983"
   },
   "40140": {
-   "hub": "#2e007d",
-   "read": "#3b009b",
-   "wash": "#584baa"
+   "hub": "#001824",
+   "line": "#166b8a",
+   "read": "#001824",
+   "wash": "#166b8a"
   },
   "40900": {
-   "hub": "#14007c",
-   "read": "#1c009c",
-   "wash": "#3a4ba6"
+   "hub": "#001319",
+   "line": "#006679",
+   "read": "#001319",
+   "wash": "#006679"
   },
   "41180": {
-   "hub": "#8f004a",
-   "read": "#a60057",
-   "wash": "#c3557d"
+   "hub": "#9f003a",
+   "line": "#e0959e",
+   "read": "#9f003a",
+   "wash": "#e0959e"
   },
   "41700": {
-   "hub": "#7d005c",
-   "read": "#93006d",
-   "wash": "#b24f8d"
+   "hub": "#6c006c",
+   "line": "#b481b1",
+   "read": "#6c006c",
+   "wash": "#b481b1"
   },
   "41740": {
-   "hub": "#2c007d",
-   "read": "#38009b",
-   "wash": "#554baa"
+   "hub": "#001823",
+   "line": "#146a8a",
+   "read": "#001823",
+   "wash": "#146a8a"
   },
   "41860": {
-   "hub": "#15007c",
-   "read": "#1e009c",
-   "wash": "#3b4ba6"
+   "hub": "#001115",
+   "line": "#006471",
+   "read": "#001115",
+   "wash": "#006471"
   },
   "42660": {
-   "hub": "#11007c",
-   "read": "#18009c",
-   "wash": "#364ba5"
+   "hub": "#001723",
+   "line": "#126a89",
+   "read": "#001723",
+   "wash": "#126a89"
   },
   "45300": {
-   "hub": "#a72800",
-   "read": "#be3000",
-   "wash": "#dc6c50"
+   "hub": "#008161",
+   "line": "#8cdcbe",
+   "read": "#008161",
+   "wash": "#8cdcbe"
   },
   "47900": {
-   "hub": "#a72800",
-   "read": "#bf3000",
-   "wash": "#dc6c50"
+   "hub": "#00887d",
+   "line": "#8ae6da",
+   "read": "#00887d",
+   "wash": "#8ae6da"
   }
  },
- "note": "position -> hue, from hero_geo.py. read is the mark, hub is the badge ring.",
+ "note": "position -> hue, from hero_r4.py. read is the mark, line is the washed twin the connective pass uses, hub is the ring.",
  "package": "sha256:b7a3bba2195043c3bf326a1e437fa2f7ee17cbec06c54c0b799a1692f504ee20"
 }
