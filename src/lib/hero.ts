@@ -345,6 +345,67 @@ if (field && payloadEl) {
     }
   }
 
+  // ── the two views, and why per capita is not one of them ─────────────────────
+  //
+  // WHAT WAS ASKED FOR was a per-capita toggle. It cannot be built, and the reason is in the
+  // package rather than in taste: `not_claimable[6]` says no migration RATE is claimable here,
+  // because dividing these counts by resident population mixes universes -- filers and their
+  // dependents over residents -- which biases every rate low by each place's own non-filing
+  // share, and that share correlates with the demographics a migration story is usually about.
+  // Resident population is not in the package at all, and `contract.default` is that an absent
+  // quantity may not be drawn. The page already carries a section explaining why v1's toggle was
+  // deleted, so shipping one would put the piece in contradiction with its own printed text.
+  //
+  // WHAT THE TOGGLE IS INSTEAD, and the first design for it was wrong. The obvious move --
+  // rescale each destination against the selected metro's own outflow -- changes nothing a
+  // reader can see: dividing all twenty-nine marks by one constant is a uniform zoom, and the
+  // compass already self-normalises, so switching metros is already comparable.
+  //
+  // The size channel only hides something ON THE RESTING MAP, where a disc is that metro's
+  // absolute outflow and New York therefore dwarfs Cincinnati. So the second view REMOVES THE
+  // SIZE CHANNEL: every metro is drawn at one radius and the only thing left varying is the
+  // hole. Thirty rings the same size, thirty different holes, directly comparable -- which is
+  // the job per capita was wanted for, done without a denominator this package does not have.
+  //
+  // A constant radius encodes nothing, and the hole is the same ratio of the same two published
+  // cells it always was. Nothing new is drawn and nothing at all is printed.
+  const EQUAL_R = 30.0;
+  let equalised = false;
+  const restGeom = new Map<string, { r: number; hole: number }>();
+  svg.querySelectorAll<SVGGElement>('g[data-metro]').forEach((g) => {
+    const outer = g.querySelector('circle');
+    const hole = g.querySelector('[data-hole]');
+    if (!outer || !hole) return;
+    restGeom.set(g.dataset.metro!, {
+      r: Number(outer.getAttribute('r')),
+      hole: Number(hole.getAttribute('r')),
+    });
+  });
+
+  function applyView() {
+    svg.querySelectorAll<SVGGElement>('g[data-metro]').forEach((g) => {
+      const base = restGeom.get(g.dataset.metro!);
+      const outer = g.querySelector('circle');
+      const hole = g.querySelector('[data-hole]');
+      if (!base || !outer || !hole) return;
+      // The hole keeps its own share of whatever radius the ring is drawn at: the same ratio in
+      // both views, and only the ring it sits in changes.
+      const share = base.r ? base.hole / base.r : 0;
+      const r = equalised ? EQUAL_R : base.r;
+      outer.setAttribute('r', r.toFixed(2));
+      hole.setAttribute('r', (r * share).toFixed(2));
+    });
+  }
+
+  const viewToggle = el<HTMLInputElement>('#equalise');
+  if (viewToggle) {
+    viewToggle.addEventListener('change', () => {
+      equalised = viewToggle.checked;
+      field.classList.toggle('equalised', equalised);
+      applyView();
+    });
+  }
+
   // ── selection ────────────────────────────────────────────────────────────────
 
   const panels = new Map<string, HTMLElement>();

@@ -61,6 +61,8 @@ import {
   SELECT_LABEL,
   AT_REST,
   RESET,
+  EQUALISE_LABEL,
+  EQUALISE_NOTE,
 } from '../copy';
 
 import claimSvgRaw from '../assets/09-claim.svg?raw';
@@ -127,6 +129,15 @@ const heroData = {
       <div class="panel">
         <p class="atrest" id="atrest">{AT_REST.text}</p>
         {metros.map((m) => <MetroReadout m={m} />)}
+      </div>
+
+      <!-- The size channel is the thing a reader cannot see past on the resting map: a disc is
+           that metro's absolute outflow, so New York dwarfs Cincinnati and the holes stop being
+           comparable. This turns it off. -->
+      <div class="viewpick">
+        <input type="checkbox" id="equalise" />
+        <label for="equalise">{EQUALISE_LABEL.text}</label>
+        <span class="vh">{EQUALISE_NOTE.text}</span>
       </div>
 
       <div class="pick">

@@ -182,6 +182,14 @@ export const SELECT_LABEL = say('Choose a metro', 'apparatus');
 export const AT_REST = say('Select a metro to draw where its people went.', 'apparatus');
 export const RESET = say('Show every metro', 'apparatus');
 
+// The second view of the resting map. Apparatus: a control's own label asserts no quantity,
+// and the view it turns on draws the same two published cells it already drew.
+export const EQUALISE_LABEL = say('Draw every metro the same size', 'apparatus');
+export const EQUALISE_NOTE = say(
+  'Size is how many people left. Turn it off and every metro is one ring, so the holes can be compared directly.',
+  'apparatus',
+);
+
 // ── the metro readout ──────────────────────────────────────────────────────────
 
 export interface MetroCopy {
