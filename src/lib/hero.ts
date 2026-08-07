@@ -38,6 +38,8 @@
 // lint's backstop and there is no client template that could put a figure on screen behind
 // the ledger's back.
 
+import { drawCompass } from './compass';
+
 interface Hub {
   cbsa: string;
   x: number;
@@ -48,7 +50,9 @@ interface Hub {
 interface Payload {
   viewBox: [number, number, number, number];
   hubs: Hub[];
-  hues: Record<string, { hub: string; read: string; wash: string }>;
+  hues: Record<string, { hub: string; read: string; wash: string; line: string }>;
+  compass: Record<string, import('./compass').CompassMetro>;
+  names: Record<string, string>;
   /** The badges are buttons, so they need names. Name-from-content over an SVG <text> child
       is unreliable in Safari/VoiceOver, and the rewrite that made the crowd the selector
       dropped the labels the deleted dot map used to set — so thirty controls shipped nameless.
@@ -96,6 +100,7 @@ const payloadEl = el<HTMLScriptElement>('#hero-data');
 const picker = el<HTMLSelectElement>('#metroPick');
 const atRest = el<HTMLElement>('#atrest');
 const live = el<HTMLElement>('#live');
+const compassHost = el<HTMLElement>('#compass');
 
 if (field && payloadEl) {
   const data: Payload = JSON.parse(payloadEl.textContent || '{}');
@@ -385,6 +390,12 @@ if (field && payloadEl) {
     lightCrowd(cbsa);
     if (cbsa) drawLines(cbsa, 1);
     else clearLines();
+    // The phone's stage. Drawn for every selection regardless of viewport -- CSS decides which
+    // stage is visible, so a rotation from portrait to landscape never finds an empty one.
+    if (compassHost) {
+      drawCompass(compassHost, { metros: data.compass, hues: data.hues, names: data.names }, cbsa);
+      compassHost.setAttribute('aria-hidden', String(cbsa === null));
+    }
     svg.querySelectorAll('g[data-metro]').forEach((g) => {
       const on = (g as SVGGElement).dataset.metro === cbsa;
       g.classList.toggle('sel', on);

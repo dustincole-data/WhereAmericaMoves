@@ -835,3 +835,43 @@
     display: block;
   }
 }
+
+/* ── the phone's stage ──────────────────────────────────────────────────────────
+ *
+ * Two stages, one visible at a time, and the swap is CSS rather than JavaScript so a
+ * rotation never lands on an unbuilt one. `compass.ts` draws for every selection at every
+ * width; only this decides which is on screen.
+ *
+ * AT REST ON A PHONE THE MAP STAYS AND ITS TYPE GOES. The country does not fit — at 390px
+ * the plate scales to 0.315 and a metro name renders at 4.7px, which is the defect, not the
+ * map. But the resting message is "thirty metros, each with a hole in its record", and the
+ * marks carry that on their own. So the labels are hidden rather than the picture, and the
+ * names arrive on selection, in the compass, at a size a person can read.
+ */
+.compass {
+  display: none;
+}
+.compass svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 720px) {
+  .stage .field svg {
+    width: 100%;
+    height: auto;
+  }
+  .stage .field text {
+    display: none;
+  }
+  /* Once a metro is chosen the compass IS the stage: it answers the question the map cannot
+     at this width — which places, in which direction, how many. */
+  .stage:has(.compass[aria-hidden='false']) .field {
+    display: none;
+  }
+  .compass[aria-hidden='false'] {
+    display: block;
+    padding: 0 var(--gutter) 0.5rem;
+  }
+}

@@ -66,6 +66,7 @@ import {
 import claimSvgRaw from '../assets/09-claim.svg?raw';
 import fieldSvgRaw from '../assets/09-field.svg?raw';
 import hues from '../assets/09-hues.json';
+import compass from '../assets/09-compass.json';
 
 // The one check hashes do not watch: a plate drawn from an older package, sitting beside a
 // fresh manifest. Every emitted plate carries data-package; both are asserted here.
@@ -96,6 +97,11 @@ const heroData = {
   // rewrite dropped them, so thirty controls shipped nameless while `metroCopy(...).aria` sat
   // in the ledger unrendered.
   aria: Object.fromEntries(metros.map((m) => [m.cbsa, m.aria.text])),
+  // The phone's mark. Geometry only -- bearings and log-distances, apparatus under
+  // `contract.apparatus`, never printed. See lib/compass.ts for why the phone cannot use the
+  // field: at 390px the plate scales to 0.315 and a metro name renders at 4.7px.
+  compass: compass.metros,
+  names: Object.fromEntries(metros.map((m) => [m.cbsa, m.name.text])),
 };
 ---
 
@@ -134,6 +140,9 @@ const heroData = {
 
     <div class="stage">
       <div class="field" id="field" set:html={fieldSvg} />
+      <!-- The phone's mark. Empty at rest and empty on every desktop width; CSS decides which
+           of the two stages is on screen, and `compass.ts` fills this one on selection. -->
+      <div class="compass" id="compass" aria-hidden="true" />
       <p class="vh">{HERO_ARIA.text}</p>
     </div>
 
