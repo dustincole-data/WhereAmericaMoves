@@ -1,409 +1,533 @@
-// The hero's interaction, and the one new mark in v2.
+// The mark, drawn — and the one place motion lives.
 //
-// WHAT THIS REPLACES. v2 shipped two charts: 09's crowd at the top and a d3 dot map five
-// screens below it, in a section of its own. Beauty 06's addendum of 2026-08-06 folds the
-// second into the first — the crowd IS the selector — because the reader met them as two
-// unrelated pictures and had to scroll past four prose beats to reach the one that moved.
-// `map.ts` and its d3-geo / topojson / us-atlas dependencies go with it.
+// WHAT THIS REPLACES. Rounds 1–4 were one crowd of 863 marks with lines drawn on selection.
+// That route was rejected four times on one axis, and 13 ruled the replacement on
+// 2026-08-07: thirty clusters of dots, laid out in the rough shape of the country on a wide
+// screen and on a four-column grid on a phone, every one of them re-forming to its own
+// exchange with whichever metro the reader chooses. `compass.ts`, `plate.ts` and the baked
+// field plate go with the mark they served.
 //
-// THE NEW MARK, and why it is not the chord that died three times. Beauty 03 killed a ring
-// three times for one reason: a chord routes ALL 863 ribbons through one centre, so hues
-// interleave at mark scale and the middle goes to mush — a figure/ground failure, not a
-// palette failure. The rule that keeps this out of that hole is structural, not a setting:
+// WHY A CANVAS AND NOT SVG. A selection re-forms up to ~4,000 dots at once, and each one
+// moves, resizes and changes hue on the way. Thirty animated `<g>` transforms would have
+// been cheap, but scaling a group scales its dots with it — and the dot is the unit, so a
+// transition that changes the dot's size is a transition that changes what a dot means,
+// even if only for 700ms. On a canvas every dot keeps exactly its own radius the whole way
+// across, and the frame costs ~600 fills instead of 4,000 element mutations.
 //
-//   NO LINE IS DRAWN AT REST.
+// THE COST IS STATED RATHER THAN HIDDEN: with JavaScript off, the mark does not draw. What
+// still renders is the whole record — headline, standfirst, the claim register, all thirty
+// readouts, the beats, the limits and the footer — and the thirty landmarks remain real
+// focusable buttons in the overlay, so a keyboard and a screen reader reach every metro
+// whether or not a pixel of the picture arrived.
 //
-// The layer is empty until the reader elects a metro, and then it holds one metro's lines —
-// at most 29 out and 29 in, radiating to 29 distinct places on a map. There is never a state
-// in which 863 ribbons are on screen at once, so the mush the chord could not avoid is
-// unreachable here rather than tuned away.
-//
-// WHAT THE CONTRACT SAYS ABOUT IT. Each line is ONE CELL of `top_metro_relations` — one
-// directed pair, drawn at its own disclosed value. Beauty 05 §2: naming is asserting a cell's
-// relation to cells NOT SHOWN — a superlative, a rank, a top-N cut. Nothing here is cut,
-// sorted, labelled or called out: every one of the metro's directions is drawn, including the
-// ones with no flow to draw. A reader whose eye finds the thickest line is 05 §3's scales
-// clause working as designed — "a chord where the reader's own eye finds the darkest arc is
-// just what a chart is".
-//
-// AND THE OBLIGATION IS IN THE MARK. D0014 requires the missing-pair count to be published
-// with any claim on this relation set, and says an absent pair means withheld-or-absent and
-// never zero. So an absent direction is DRAWN — a dashed empty line to an open ring, at the
-// smallest size this piece draws — rather than omitted. Select Baltimore and a line goes out
-// to Cincinnati carrying nothing. That is beat ④ delivered by the map instead of by a
-// paragraph, which is the whole point of the reopen.
-//
-// This module constructs NO COPY. It draws geometry and toggles the visibility of readouts
-// the server already rendered, so every string the reader can reach is in dist for the
-// lint's backstop and there is no client template that could put a figure on screen behind
-// the ledger's back.
+// EVERY STRING IS SERVER-RENDERED. This module constructs no copy at all: it moves text
+// nodes the page already wrote and toggles the visibility of readouts that are already in
+// dist, so the caption lint's dist→ledger backstop reads the real text and there is no
+// client template that could put a figure on screen behind the ledger's back. The canvas
+// draws no text of any kind.
 
-import { drawCompass } from './compass';
+import {
+  BANDS,
+  PHONE,
+  RAMP_STOPS,
+  WIDE,
+  bandOf,
+  bucketOf,
+  cutBands,
+  dotAt,
+  hexToRgb,
+  quadPoint,
+  radiusFor,
+  threadControl,
+  type Mode,
+} from './clusters';
 
-interface Hub {
-  cbsa: string;
-  x: number;
-  y: number;
-  r: number;
+interface ViewData {
+  n: number[];
+  pole: number[];
+  cut: number[];
 }
 
 interface Payload {
-  viewBox: [number, number, number, number];
-  hubs: Hub[];
-  hues: Record<string, { hub: string; read: string; wash: string; line: string }>;
-  compass: Record<string, import('./compass').CompassMetro>;
-  names: Record<string, string>;
-  /** The badges are buttons, so they need names. Name-from-content over an SVG <text> child
-      is unreliable in Safari/VoiceOver, and the rewrite that made the crowd the selector
-      dropped the labels the deleted dot map used to set — so thirty controls shipped nameless.
-      These are `metroCopy(...).aria`, which is a real CopyRecord and was dead code. */
-  aria: Record<string, string>;
-  /** [origin, dest, people] — one row per disclosed pair. */
-  pairs: [string, string, number][];
-  /** [origin, dest] — the directions with no disclosed flow at all. */
-  absent: [string, string][];
+  codes: string[];
+  views: Record<string, ViewData>;
+  wpos: Record<string, number[]>;
+  ppos: number[];
+  hues: Record<string, string>;
+  /** the thirty share pages open pre-selected and without controls */
+  focus: string | null;
 }
-
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-/** How far a line bows off its own chord, as a fraction of its length. The crowd's own
-    leaders bow at 0.244; a leader is a stub and these run coast to coast, so the same
-    fraction would throw a cross-country line halfway to Canada. The HANDEDNESS is what has
-    to match — every line bows right of its direction of travel, so a reciprocal pair draws
-    two separated arcs rather than one line drawn twice. */
-const BOW = 0.135;
-
-/** The taper. 09's D2: a line reads as travelling when it is fat where it starts and thin
-    where it arrives, and an even stroke reads identically in both directions — which is
-    what "can't see where they are going" was pointing at in round 2b. HEAD_W is a fraction
-    of the line's own width rather than a constant: a constant head drew every arrival end
-    NARROWER than the smallest width the scale can express, i.e. off the bottom of its own
-    axis, so the taper was silently subtracting value instead of showing direction. */
-const HEAD_FRAC = 0.3;
-
-/** The width scale, and it is MULTIPLICATIVE. It used to be `MIN_W + sqrt(v/max)*(MAX_W-MIN_W)`
-    — an additive floor, which is not a floor at all: it lifts every cell, not the small ones.
-    Measured on the real frame, that drew a 30-person cell at the width of 965 people (32.2x)
-    and overstated 349 of 863 cells by 2x or more. This is the exact defect 09 round 1 was
-    failed for (an undisclosed area floor drawing a 30-person cell at 4.25x its honest area),
-    arriving again in a different channel and seven times worse.
-
-    Now: honest sqrt, with a hard floor applied only below it — and the floor is DISCLOSED in
-    the legend, which is the other half of 09's E2 that the first draw dropped. */
-const MAX_W = 15;
-const FLOOR_W = 1;
 
 const el = <T extends Element>(sel: string) => document.querySelector(sel) as T | null;
 
-const field = el<HTMLElement>('#field');
+const stage = el<HTMLElement>('#stage');
+const canvas = el<HTMLCanvasElement>('#dots');
+const over = el<SVGSVGElement>('#over');
 const payloadEl = el<HTMLScriptElement>('#hero-data');
-const picker = el<HTMLSelectElement>('#metroPick');
-const atRest = el<HTMLElement>('#atrest');
-const live = el<HTMLElement>('#live');
-const compassHost = el<HTMLElement>('#compass');
 
-if (field && payloadEl) {
-  const data: Payload = JSON.parse(payloadEl.textContent || '{}');
-  const svg = field.querySelector('svg')!;
-  const hub = new Map(data.hubs.map((h) => [h.cbsa, h]));
-  const hue = (cbsa: string) => data.hues[cbsa]?.read ?? '#5c6068';
+if (stage && canvas && over && payloadEl) {
+  const D: Payload = JSON.parse(payloadEl.textContent || '{}');
+  const ctx = canvas.getContext('2d')!;
+  const picker = el<HTMLSelectElement>('#metroPick');
+  const atRest = el<HTMLElement>('#atrest');
+  const onSel = el<HTMLElement>('#onsel');
+  const live = el<HTMLElement>('#live');
+  const sourceTag = el<SVGTextElement>('#sourcetag');
 
-  // Out and in, indexed once. Both directions are kept because a metro's record has two
-  // halves and the readout prints both; the drawing tells them apart by weight, not by
-  // hiding one.
-  const out = new Map<string, [string, number][]>();
-  const into = new Map<string, [string, number][]>();
-  let maxPeople = 1;
-  for (const [o, d, v] of data.pairs) {
-    (out.get(o) ?? out.set(o, []).get(o)!).push([d, v]);
-    (into.get(d) ?? into.set(d, []).get(d)!).push([o, v]);
-    if (v > maxPeople) maxPeople = v;
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)');
+  const NARROW = matchMedia('(max-width: 720px)');
+
+  const RGB = BANDS.map((ramp) => ramp.map(hexToRgb));
+  const INK = hexToRgb('#15181d');
+
+  // ── one view, resolved into geometry ─────────────────────────────────────────
+
+  interface Cluster {
+    x: number;
+    y: number;
+    r: number;
+    n: number;
+    pole: number;
+    xs: Float32Array;
+    ys: Float32Array;
+    /** band × stops + stop, per dot */
+    bucket: Uint8Array;
   }
-  const absentOut = new Map<string, string[]>();
-  const absentIn = new Map<string, string[]>();
-  for (const [o, d] of data.absent) {
-    (absentOut.get(o) ?? absentOut.set(o, []).get(o)!).push(d);
-    (absentIn.get(d) ?? absentIn.set(d, []).get(d)!).push(o);
+
+  const cache = new Map<string, Cluster[]>();
+
+  function frame(key: string, m: Mode): Cluster[] {
+    const ck = `${key}|${m.w}`;
+    const hit = cache.get(ck);
+    if (hit) return hit;
+
+    const v = D.views[key];
+    const pos = m === PHONE ? D.ppos : D.wpos[key];
+    const out: Cluster[] = D.codes.map((code, i) => {
+      const x = pos[i * 2];
+      const y = pos[i * 2 + 1];
+      const n = v.n[i];
+      const pole = v.pole[i];
+      const r = n > 0 ? radiusFor(n, m) : 0;
+      const xs = new Float32Array(n);
+      const ys = new Float32Array(n);
+      const fr = new Float32Array(n);
+      for (let k = 0; k < n; k++) {
+        const [px, py, frac] = dotAt(k, n, x, y, r);
+        xs[k] = px;
+        ys[k] = py;
+        fr[k] = frac;
+      }
+      // The resting view cuts each cluster into its own arrived and left cells, and the
+      // boundary is decided by POSITION so it comes out a straight edge. See clusters.ts.
+      const bands = pole === 3 ? cutBands(ys, n, v.cut[i]) : null;
+      const bucket = new Uint8Array(n);
+      for (let k = 0; k < n; k++) bucket[k] = bucketOf(bands ? bands[k] : bandOf(pole), fr[k]);
+      return { x, y, r, n, pole, xs, ys, bucket };
+    });
+    cache.set(ck, out);
+    return out;
   }
 
-  const width = (people: number) => Math.max(FLOOR_W, MAX_W * Math.sqrt(people / maxPeople));
+  // ── the morph ────────────────────────────────────────────────────────────────
+  //
+  // A dot that exists in both views travels between its two places. One that only exists in
+  // the view being left shrinks into its own cluster's centre; one that only exists in the
+  // view being entered grows out of it. NOTHING FADES: alpha would have put a half-strength
+  // dot on screen, and a dot at half strength is not half a dot of anybody. The radius does
+  // the appearing, so every dot drawn at full strength is a whole one.
 
-  // ── the layers ───────────────────────────────────────────────────────────────
-  // Under the badges, over the crowd: a line must not cover the landmark it points at.
-  const defs = document.createElementNS(SVG_NS, 'defs');
-  const gLines = document.createElementNS(SVG_NS, 'g');
-  gLines.setAttribute('class', 'lines');
-  const firstBadge = svg.querySelector('g[data-metro]');
-  svg.insertBefore(defs, firstBadge);
-  svg.insertBefore(gLines, firstBadge);
+  interface Group {
+    ci: number;
+    from: [number, number, number];
+    to: [number, number, number];
+    /** x0,y0,r0,x1,y1,r1 per dot */
+    d: Float32Array;
+  }
 
-  /** A quadratic from p0 to p1, bowed right, offset into a ribbon that tapers from w0 to
-      HEAD_W. Sampled rather than offset analytically: 22 samples is under a tenth of a
-      pixel of error at this scale and it cannot produce the cusps an analytic offset does
-      where the curvature is tight. */
-  function ribbon(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    w0: number,
-    trim0: number,
-    trim1: number
-  ): string {
-    let dx = x1 - x0;
-    let dy = y1 - y0;
-    const len = Math.hypot(dx, dy) || 1;
-    // Start at the badge's edge, stop at the far badge's edge: a line that starts under the
-    // ring it starts from reads as coming from nowhere.
-    //
-    // But the trims are capped, and that cap matters more than it looks. Badge radii run
-    // 18–32 units and adjacent metros sit closer than that, so the untrimmed rule deleted
-    // the heaviest cells outright: Los Angeles to Riverside, 78,209 people — THE LARGEST CELL
-    // IN THE FRAME, the one that defines the top of the width scale — was drawn 1.8 units long
-    // and 15 wide, a blob under the badge layer. Nine of the twenty heaviest cells were wider
-    // than they were long. A cap that keeps a minimum drawn length is the difference between
-    // "these two places trade the most people in the country" being the biggest mark on screen
-    // and it being invisible.
-    const keep = Math.max(0, len - 6);
-    const scale = trim0 + trim1 > keep ? keep / (trim0 + trim1) : 1;
-    const ux = dx / len;
-    const uy = dy / len;
-    x0 += ux * trim0 * scale;
-    y0 += uy * trim0 * scale;
-    x1 -= ux * trim1 * scale;
-    y1 -= uy * trim1 * scale;
-    dx = x1 - x0;
-    dy = y1 - y0;
-    const L = Math.hypot(dx, dy) || 1;
-    const cx = (x0 + x1) / 2 + (-dy / L) * BOW * L;
-    const cy = (y0 + y1) / 2 + (dx / L) * BOW * L;
+  const DUR = 780;
+  const WAVE = 300;
 
-    const N = 22;
-    const top: string[] = [];
-    const bot: string[] = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const a = (1 - t) * (1 - t);
-      const b = 2 * t * (1 - t);
-      const c = t * t;
-      const px = a * x0 + b * cx + c * x1;
-      const py = a * y0 + b * cy + c * y1;
-      const tx = 2 * (1 - t) * (cx - x0) + 2 * t * (x1 - cx);
-      const ty = 2 * (1 - t) * (cy - y0) + 2 * t * (y1 - cy);
-      const tl = Math.hypot(tx, ty) || 1;
-      const nx = -ty / tl;
-      const ny = tx / tl;
-      const h = (w0 * (1 - (1 - HEAD_FRAC) * t)) / 2;
-      top.push(`${(px + nx * h).toFixed(1)},${(py + ny * h).toFixed(1)}`);
-      bot.push(`${(px - nx * h).toFixed(1)},${(py - ny * h).toFixed(1)}`);
+  let cur = D.focus ?? 'rest';
+  let from: Cluster[] = frame(cur, mode());
+  let to: Cluster[] = from;
+  let groups: Group[] = [];
+  let delay: number[] = D.codes.map(() => 0);
+  let t0 = 0;
+  let running = false;
+
+  function mode(): Mode {
+    return NARROW.matches ? PHONE : WIDE;
+  }
+
+  function colourOf(bucket: number): [number, number, number] {
+    return RGB[Math.floor(bucket / RAMP_STOPS)][bucket % RAMP_STOPS];
+  }
+
+  function buildGroups(a: Cluster[], b: Cluster[], m: Mode): Group[] {
+    const dr = m.dotR;
+    const out: Group[] = [];
+    for (let ci = 0; ci < a.length; ci++) {
+      const A = a[ci];
+      const B = b[ci];
+      const N = Math.max(A.n, B.n);
+      if (N === 0) continue;
+      // Bucketed by the PAIR of colours a dot travels between, so one fill serves every dot
+      // that shares a journey. A cluster crossing from a cut to a single pole has at most
+      // two source bands and one destination band, which is ten paths rather than N.
+      const bins = new Map<number, number[]>();
+      for (let k = 0; k < N; k++) {
+        const bf = k < A.n ? A.bucket[k] : B.bucket[k];
+        const bt = k < B.n ? B.bucket[k] : A.bucket[k];
+        const key = bf * 32 + bt;
+        const list = bins.get(key);
+        if (list) list.push(k);
+        else bins.set(key, [k]);
+      }
+      for (const [key, ks] of bins) {
+        const d = new Float32Array(ks.length * 6);
+        ks.forEach((k, j) => {
+          const o = j * 6;
+          if (k < A.n) {
+            d[o] = A.xs[k];
+            d[o + 1] = A.ys[k];
+            d[o + 2] = dr;
+          } else {
+            d[o] = A.x;
+            d[o + 1] = A.y;
+            d[o + 2] = 0;
+          }
+          if (k < B.n) {
+            d[o + 3] = B.xs[k];
+            d[o + 4] = B.ys[k];
+            d[o + 5] = dr;
+          } else {
+            d[o + 3] = B.x;
+            d[o + 4] = B.y;
+            d[o + 5] = 0;
+          }
+        });
+        out.push({ ci, from: colourOf(Math.floor(key / 32)), to: colourOf(key % 32), d });
+      }
     }
-    return `M${top.join('L')}L${bot.reverse().join('L')}Z`;
+    return out;
   }
 
-  function curve(x0: number, y0: number, x1: number, y1: number, trim0: number, trim1: number): string {
-    const dx0 = x1 - x0;
-    const dy0 = y1 - y0;
-    const len = Math.hypot(dx0, dy0) || 1;
-    const sx = x0 + (dx0 / len) * trim0;
-    const sy = y0 + (dy0 / len) * trim0;
-    const ex = x1 - (dx0 / len) * trim1;
-    const ey = y1 - (dy0 / len) * trim1;
-    const dx = ex - sx;
-    const dy = ey - sy;
-    const L = Math.hypot(dx, dy) || 1;
-    const cx = (sx + ex) / 2 + (-dy / L) * BOW * L;
-    const cy = (sy + ey) / 2 + (dx / L) * BOW * L;
-    return `M${sx.toFixed(1)},${sy.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+  /** The wave. Clusters do not all re-form at once: the ones nearest whatever the reader
+      just touched go first and the far coast follows, which is the difference between a
+      picture updating and a picture answering. */
+  function buildDelay(anchor: number, pts: Cluster[]): number[] {
+    const ax = pts[anchor]?.x ?? 0;
+    const ay = pts[anchor]?.y ?? 0;
+    const ds = pts.map((c) => Math.hypot(c.x - ax, c.y - ay));
+    const mx = Math.max(...ds, 1);
+    return ds.map((d) => (d / mx) * WAVE);
   }
 
-  let gradSeq = 0;
-  function gradient(x0: number, y0: number, x1: number, y1: number, from: string, to: string): string {
-    const id = `hl${gradSeq++}`;
-    const g = document.createElementNS(SVG_NS, 'linearGradient');
-    g.setAttribute('id', id);
-    g.setAttribute('gradientUnits', 'userSpaceOnUse');
-    g.setAttribute('x1', String(x0));
-    g.setAttribute('y1', String(y0));
-    g.setAttribute('x2', String(x1));
-    g.setAttribute('y2', String(y1));
-    // The fade used to start at 0.1 alpha and not reach full until 32% along — which put the
-    // faintest ink on the WIDEST end and made the legend's own sentence false: "heavy where it
-    // leaves, fine where it arrives" described a mark whose visual weight peaked a third of the
-    // way across. Worse on hover, where the same end landed at 3.8% alpha. Now it is inked
-    // where it leaves; the softening is a lead-in, not an erasure.
-    for (const [off, col, op] of [
-      [0, from, 0.62],
-      [0.12, from, 1],
-      [1, to, 1],
-    ] as [number, string, number][]) {
-      const s = document.createElementNS(SVG_NS, 'stop');
-      s.setAttribute('offset', String(off));
-      s.setAttribute('stop-color', col);
-      if (op !== 1) s.setAttribute('stop-opacity', String(op));
-      g.appendChild(s);
-    }
-    defs.appendChild(g);
-    return id;
+  const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+
+  // ── the frame the canvas actually paints ─────────────────────────────────────
+
+  let scale = 1;
+  let ox = 0;
+  let oy = 0;
+  /** the label's size in USER UNITS, derived so it renders at a fixed number of real pixels */
+  let labelUnits = WIDE.labelSize;
+
+  /** A NAME IS TYPE, NOT GEOMETRY, so it does not scale with the mark. Setting the label in
+      user units is what put the phone's names at 4px: the drawing box is three times the
+      screen there, so every unit of type shrinks to a third of itself. These are the sizes
+      the reader actually gets, and the slot search is run in units converted back from them. */
+  const LABEL_PX = 13;
+  const LABEL_PX_NARROW = 11;
+
+  function fit() {
+    const m = mode();
+    const box = stage!.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas!.width = Math.round(box.width * dpr);
+    canvas!.height = Math.round(box.height * dpr);
+    canvas!.style.width = `${box.width}px`;
+    canvas!.style.height = `${box.height}px`;
+    // THE OVERLAY'S BOX IS THE CANVAS'S BOX. It has to be set here rather than in the
+    // stylesheet, because the two modes draw into different boxes and a viewBox is not a
+    // CSS property — leaving it at the wide box on a phone renders the whole overlay at a
+    // third scale over a canvas drawn at full size, which is every label in the wrong place
+    // and at 4px.
+    over!.setAttribute('viewBox', `0 0 ${m.w} ${m.h}`);
+    // Exactly what `preserveAspectRatio="xMidYMid meet"` does to the overlay above it, so a
+    // label and the cluster it names cannot disagree by a pixel.
+    scale = Math.min(box.width / m.w, box.height / m.h);
+    ox = (box.width - m.w * scale) / 2;
+    oy = (box.height - m.h * scale) / 2;
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
+
+    labelUnits = (NARROW.matches ? LABEL_PX_NARROW : LABEL_PX) / (scale || 1);
+    over!.style.fontSize = `${labelUnits.toFixed(2)}px`;
+    over!.style.strokeWidth = `${(labelUnits * 0.24).toFixed(2)}px`;
   }
 
-  function clearLines() {
-    gLines.replaceChildren();
-    defs.replaceChildren();
-    gradSeq = 0;
-  }
+  function glyphs(f: Cluster[], key: string, m: Mode, alpha: number, t: number) {
+    if (alpha <= 0.01) return;
+    const v = D.views[key];
+    const sel = key === 'rest' ? null : key;
+    const si = sel ? D.codes.indexOf(sel) : -1;
 
-  /** Draw one metro's whole record: everything leaving it, everything arriving, and every
-      direction the publisher disclosed nothing for. `weight` scales the whole layer so the
-      same drawing serves a hover preview and a selection. */
-  function drawLines(cbsa: string, weight: number) {
-    clearLines();
-    const h0 = hub.get(cbsa);
-    if (!h0) return;
-
-    // The washed connective pass first — 09's two-area treatment, inverted onto direction:
-    // arrivals are the wash, departures are the read. "Where these people are moving to" is
-    // the question, so departures get the chroma.
-    // Arrivals were drawn in the `wash` hue at half alpha, which measured 1.55:1 against the
-    // ground for all thirty — under the 3:1 floor for a graphical object the legend names as
-    // content. They are half of what a metro's record IS. The `read` hue at 0.62 clears the
-    // floor and the weight difference still carries the distinction, which is what the
-    // two-area treatment actually asks for.
-    for (const [o, v] of into.get(cbsa) ?? []) {
-      const h = hub.get(o);
-      if (!h) continue;
-      const p = document.createElementNS(SVG_NS, 'path');
-      p.setAttribute('d', curve(h.x, h.y, h0.x, h0.y, h.r + 1, h0.r + 1));
-      p.setAttribute('fill', 'none');
-      p.setAttribute('stroke', data.hues[o]?.read ?? '#9aa0aa');
-      p.setAttribute('stroke-width', Math.max(0.6, 3.0 * Math.sqrt(v / maxPeople)).toFixed(2));
-      p.setAttribute('stroke-opacity', String(0.62 * weight));
-      p.setAttribute('stroke-linecap', 'round');
-      p.setAttribute('class', 'ln-in');
-      gLines.appendChild(p);
-    }
-
-    for (const [d, v] of out.get(cbsa) ?? []) {
-      const h = hub.get(d);
-      if (!h) continue;
-      const p = document.createElementNS(SVG_NS, 'path');
-      p.setAttribute('d', ribbon(h0.x, h0.y, h.x, h.y, width(v), h0.r + 1, h.r + 2));
-      p.setAttribute('fill', `url(#${gradient(h0.x, h0.y, h.x, h.y, hue(cbsa), hue(d))})`);
-      p.setAttribute('fill-opacity', String(0.9 * weight));
-      p.setAttribute('class', 'ln-out');
-      gLines.appendChild(p);
+    // The threads, under everything, growing out of the source as the clusters land.
+    if (si >= 0) {
+      const s = f[si];
+      const nmax = Math.max(...v.n, 1);
+      const p = Math.max(0, Math.min(1, (t - 0.2) / 0.8));
+      if (p > 0) {
+        ctx.lineCap = 'round';
+        for (let i = 0; i < f.length; i++) {
+          if (i === si || v.pole[i] === 2 || v.n[i] <= 0) continue;
+          const c = f[i];
+          const [qx, qy] = threadControl(s.x, s.y, c.x, c.y);
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          const STEP = 16;
+          for (let k = 1; k <= STEP; k++) {
+            const [px, py] = quadPoint(s.x, s.y, qx, qy, c.x, c.y, (k / STEP) * p);
+            ctx.lineTo(px, py);
+          }
+          const rgb = RGB[v.pole[i] === 1 ? 0 : 1][1];
+          ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(0.36 * alpha).toFixed(3)})`;
+          ctx.lineWidth = 0.5 + (m === PHONE ? 5 : 8) * (v.n[i] / nmax);
+          ctx.stroke();
+        }
+      }
     }
 
-    // The absences, drawn in both directions and never omitted.
-    //
-    // THE GLYPH IS THE SMALLEST MARK THIS PIECE DRAWS, and that is not a style choice — it is
-    // 09's E1, which round 1 was failed on. The first draw put a dashed ring at the far
-    // BADGE's radius + 4.5; badge radii are typography and encode nothing, so the ring came
-    // out at r 22.5–36.9, which on the crowd's own area scale (107.25 people per r²) decodes
-    // to 54,295–146,031 people. The largest disclosed cell in the entire frame is 78,209. The
-    // glyph for "no flow was disclosed at all" was drawn bigger than the biggest flow in the
-    // country — the same inversion that was FATAL in round 1, an order of magnitude worse.
-    // It also drew the ring around the SELECTED metro for every inbound absence, so choosing
-    // Cincinnati stamped three dashed halos on Cincinnati's own badge.
-    //
-    // Now: the disc equals the plate's own floored mark radius, it sits at the far end of its
-    // own line, and findability is carried by the dashed stroke — which is exactly what round 2
-    // ruled, restated for a line instead of a leader.
-    const ABSENT_R = 1.05;
-    for (const [list, outward] of [
-      [absentOut.get(cbsa) ?? [], true],
-      [absentIn.get(cbsa) ?? [], false],
-    ] as [string[], boolean][]) {
-      for (const other of list) {
-        const h = hub.get(other);
-        if (!h) continue;
-        const [a, b] = outward ? [h0, h] : [h, h0];
-        const trimB = b.r + 7;
-        const p = document.createElementNS(SVG_NS, 'path');
-        p.setAttribute('d', curve(a.x, a.y, b.x, b.y, a.r + 1, trimB));
-        p.setAttribute('fill', 'none');
-        p.setAttribute('stroke', 'var(--ink-2)');
-        p.setAttribute('stroke-width', '1.6');
-        p.setAttribute('stroke-dasharray', '4 5');
-        p.setAttribute('stroke-opacity', String(0.9 * weight));
-        p.setAttribute('class', 'ln-absent');
-        gLines.appendChild(p);
+    for (let i = 0; i < f.length; i++) {
+      const c = f[i];
+      const pole = v.pole[i];
 
-        const L = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-        const ex = b.x - ((b.x - a.x) / L) * trimB;
-        const ey = b.y - ((b.y - a.y) / L) * trimB;
-        const dot = document.createElementNS(SVG_NS, 'circle');
-        dot.setAttribute('cx', ex.toFixed(1));
-        dot.setAttribute('cy', ey.toFixed(1));
-        dot.setAttribute('r', String(ABSENT_R));
-        dot.setAttribute('fill', 'none');
-        dot.setAttribute('stroke', 'var(--ink-2)');
-        dot.setAttribute('stroke-width', '1.4');
-        dot.setAttribute('stroke-opacity', String(0.9 * weight));
-        dot.setAttribute('class', 'ln-absent');
-        gLines.appendChild(dot);
+      if (i === si) {
+        // THE SOURCE IS A FIXED RING. It is the thing every other cluster is measured from,
+        // so its area must assert nothing — drawing it at its own gross movement put two
+        // different meanings on one plate.
+        const hue = D.hues[D.codes[i]] || '#15181d';
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = hue;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, m.sourceR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha * 0.12;
+        ctx.fillStyle = hue;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        continue;
+      }
+
+      if (pole === 2) {
+        // AN ABSENCE, DRAWN AND NEVER DELETED. One direction of this pair is undisclosed, so
+        // the net does not exist — an empty dashed ring, never a zero, because a zero would
+        // assert a balance nobody measured. Baltimore draws three of these; New York draws
+        // none, which is why a check run only on New York proved nothing about this branch.
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#5c6068';
+        ctx.lineWidth = 1.1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, m.absentR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        continue;
+      }
+
+      if (pole === 0 && c.n <= 0) {
+        // A MEASURED ZERO IS NOT AN ABSENCE. As many people came as went, both directions
+        // disclosed. It gets a fixed neutral dot — a glyph, not a quantity — because zero
+        // dots would read as nothing measured and one dot would claim a difference.
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#5c6068';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, m.evenR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        continue;
+      }
+
+      // The halfway datum. The cut travels only about 0.29 of the cluster's radius across
+      // the thirty, so it is judged against a line rather than estimated as an area.
+      if (pole === 3 && c.r > 6) {
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.strokeStyle = `rgb(${INK[0]},${INK[1]},${INK[2]})`;
+        ctx.lineWidth = 0.7;
+        ctx.setLineDash([2.5, 2.5]);
+        ctx.beginPath();
+        ctx.moveTo(c.x - c.r - 2, c.y);
+        ctx.lineTo(c.x + c.r + 2, c.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
       }
     }
   }
 
-  // ── the two views, and why per capita is not one of them ─────────────────────
-  //
-  // WHAT WAS ASKED FOR was a per-capita toggle. It cannot be built, and the reason is in the
-  // package rather than in taste: `not_claimable[6]` says no migration RATE is claimable here,
-  // because dividing these counts by resident population mixes universes -- filers and their
-  // dependents over residents -- which biases every rate low by each place's own non-filing
-  // share, and that share correlates with the demographics a migration story is usually about.
-  // Resident population is not in the package at all, and `contract.default` is that an absent
-  // quantity may not be drawn. The page already carries a section explaining why v1's toggle was
-  // deleted, so shipping one would put the piece in contradiction with its own printed text.
-  //
-  // WHAT THE TOGGLE IS INSTEAD, and the first design for it was wrong. The obvious move --
-  // rescale each destination against the selected metro's own outflow -- changes nothing a
-  // reader can see: dividing all twenty-nine marks by one constant is a uniform zoom, and the
-  // compass already self-normalises, so switching metros is already comparable.
-  //
-  // The size channel only hides something ON THE RESTING MAP, where a disc is that metro's
-  // absolute outflow and New York therefore dwarfs Cincinnati. So the second view REMOVES THE
-  // SIZE CHANNEL: every metro is drawn at one radius and the only thing left varying is the
-  // hole. Thirty rings the same size, thirty different holes, directly comparable -- which is
-  // the job per capita was wanted for, done without a denominator this package does not have.
-  //
-  // A constant radius encodes nothing, and the hole is the same ratio of the same two published
-  // cells it always was. Nothing new is drawn and nothing at all is printed.
-  const EQUAL_R = 30.0;
-  let equalised = false;
-  const restGeom = new Map<string, { r: number; hole: number }>();
-  svg.querySelectorAll<SVGGElement>('g[data-metro]').forEach((g) => {
-    const outer = g.querySelector('circle');
-    const hole = g.querySelector('[data-hole]');
-    if (!outer || !hole) return;
-    restGeom.set(g.dataset.metro!, {
-      r: Number(outer.getAttribute('r')),
-      hole: Number(hole.getAttribute('r')),
-    });
-  });
+  function paint(now: number) {
+    const m = mode();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas!.width, canvas!.height);
+    ctx.restore();
 
-  function applyView() {
-    svg.querySelectorAll<SVGGElement>('g[data-metro]').forEach((g) => {
-      const base = restGeom.get(g.dataset.metro!);
-      const outer = g.querySelector('circle');
-      const hole = g.querySelector('[data-hole]');
-      if (!base || !outer || !hole) return;
-      // The hole keeps its own share of whatever radius the ring is drawn at: the same ratio in
-      // both views, and only the ring it sits in changes.
-      const share = base.r ? base.hole / base.r : 0;
-      const r = equalised ? EQUAL_R : base.r;
-      outer.setAttribute('r', r.toFixed(2));
-      hole.setAttribute('r', (r * share).toFixed(2));
-    });
+    let global = 1;
+    if (running) {
+      const raw = (now - t0) / (DUR + WAVE);
+      global = Math.max(0, Math.min(1, raw));
+      if (raw >= 1) running = false;
+    }
+
+    glyphs(from, prevKey, m, 1 - global, 1 - global);
+    glyphs(to, cur, m, global, global);
+
+    for (const g of groups) {
+      const t = ease(Math.max(0, Math.min(1, (now - t0 - delay[g.ci]) / DUR)));
+      const r = Math.round(g.from[0] + (g.to[0] - g.from[0]) * t);
+      const gg = Math.round(g.from[1] + (g.to[1] - g.from[1]) * t);
+      const b = Math.round(g.from[2] + (g.to[2] - g.from[2]) * t);
+      ctx.fillStyle = `rgb(${r},${gg},${b})`;
+      ctx.beginPath();
+      const d = g.d;
+      for (let o = 0; o < d.length; o += 6) {
+        const x = d[o] + (d[o + 3] - d[o]) * t;
+        const y = d[o + 1] + (d[o + 4] - d[o + 1]) * t;
+        const rr = d[o + 2] + (d[o + 5] - d[o + 2]) * t;
+        if (rr <= 0.02) continue;
+        ctx.moveTo(x + rr, y);
+        ctx.arc(x, y, rr, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
+
+    if (running) requestAnimationFrame(paint);
   }
 
-  const viewToggle = el<HTMLInputElement>('#equalise');
-  if (viewToggle) {
-    viewToggle.addEventListener('change', () => {
-      equalised = viewToggle.checked;
-      field.classList.toggle('equalised', equalised);
-      applyView();
+  let prevKey = cur;
+
+  function render(animate: boolean) {
+    const m = mode();
+    fit();
+    to = frame(cur, m);
+    from = animate ? from : to;
+    groups = buildGroups(from, to, m);
+    const anchor = D.codes.indexOf(cur === 'rest' ? prevKey : cur);
+    delay = buildDelay(anchor >= 0 ? anchor : 0, to);
+    if (!animate || REDUCED.matches) {
+      from = to;
+      groups = buildGroups(to, to, m);
+      delay = delay.map(() => 0);
+      running = false;
+      t0 = performance.now() - (DUR + WAVE);
+      paint(performance.now());
+    } else {
+      t0 = performance.now();
+      running = true;
+      requestAnimationFrame(paint);
+    }
+    placeLabels(m);
+  }
+
+  // ── the names ────────────────────────────────────────────────────────────────
+  //
+  // Placed in the browser against measured text, not against an approximation. 09 round 3
+  // recorded why: a plate that sizes a container from a per-character font metric cannot
+  // certify the page's fit, and only the browser can close it. Four slots are tried; a name
+  // that clears none of them still ships — it takes a ground-coloured halo and sits over the
+  // mark, because "you can't even read the metros" is the objection this whole form exists
+  // to answer and dropping three names is not an answer to it.
+
+  const labels = [...over!.querySelectorAll<SVGTextElement>('text[data-label]')];
+  const hits = [...over!.querySelectorAll<SVGGElement>('g[data-metro]')];
+  const meas = document.createElement('canvas').getContext('2d')!;
+
+  function placeLabels(m: Mode) {
+    const cs = getComputedStyle(over!);
+    const fs = labelUnits;
+    meas.font = `500 ${fs}px ${cs.fontFamily}`;
+    /** a control has to clear 24×24 of REAL pixels, so the floor is converted back to units */
+    const hitFloor = 13 / (scale || 1);
+    const boxes: [number, number, number, number][] = [];
+    const discs = to.map((c, i) => {
+      const v = D.views[cur];
+      const r =
+        D.codes[i] === cur
+          ? m.sourceR
+          : v.pole[i] === 2
+            ? m.absentR
+            : v.n[i] <= 0
+              ? m.evenR
+              : Math.max(c.r, 3);
+      return { x: c.x, y: c.y, r };
     });
+
+    labels.forEach((node, i) => {
+      const d = discs[i];
+      const w = meas.measureText(node.textContent || '').width;
+      const h = fs;
+      const slots: [number, number, string][] = [
+        [d.x, d.y + d.r + h + 2, 'middle'],
+        [d.x, d.y - d.r - 5, 'middle'],
+        [d.x + d.r + 6, d.y + h * 0.34, 'start'],
+        [d.x - d.r - 6, d.y + h * 0.34, 'end'],
+        [d.x, d.y + d.r + h * 2.2, 'middle'],
+      ];
+      let best: [number, number, string, [number, number, number, number]] | null = null;
+      for (const [tx, ty, anchor] of slots) {
+        const x0 = anchor === 'start' ? tx : anchor === 'end' ? tx - w : tx - w / 2;
+        const box: [number, number, number, number] = [x0 - 2, ty - h, x0 + w + 2, ty + 3];
+        if (box[0] < 2 || box[2] > m.w - 2 || box[3] > m.h - 2 || box[1] < 2) continue;
+        let clash = false;
+        for (const c of discs) {
+          const nx = Math.min(Math.max(c.x, box[0]), box[2]);
+          const ny = Math.min(Math.max(c.y, box[1]), box[3]);
+          if (Math.hypot(c.x - nx, c.y - ny) < c.r - 1) {
+            clash = true;
+            break;
+          }
+        }
+        if (!clash) {
+          for (const p of boxes) {
+            if (!(box[2] < p[0] || box[0] > p[2] || box[3] < p[1] || box[1] > p[3])) {
+              clash = true;
+              break;
+            }
+          }
+        }
+        if (!clash) {
+          best = [tx, ty, anchor, box];
+          break;
+        }
+      }
+      const [tx, ty, anchor, box] = best ?? [
+        d.x,
+        d.y + d.r + h + 2,
+        'middle',
+        [d.x - w / 2 - 2, d.y + d.r + 2, d.x + w / 2 + 2, d.y + d.r + h + 5] as [number, number, number, number],
+      ];
+      boxes.push(box);
+      node.setAttribute('text-anchor', anchor);
+      node.setAttribute('transform', `translate(${tx.toFixed(1)},${ty.toFixed(1)})`);
+      node.classList.toggle('strong', D.codes[i] === cur);
+      node.classList.toggle('quiet', cur !== 'rest' && D.codes[i] !== cur);
+    });
+
+    hits.forEach((g, i) => {
+      const d = discs[i];
+      const c = g.querySelector('circle')!;
+      c.setAttribute('r', Math.max(d.r, hitFloor).toFixed(1));
+      g.setAttribute('transform', `translate(${d.x.toFixed(1)},${d.y.toFixed(1)})`);
+    });
+
+    if (sourceTag) {
+      const si = D.codes.indexOf(cur);
+      sourceTag.style.display = si >= 0 ? '' : 'none';
+      if (si >= 0) sourceTag.setAttribute('transform', `translate(${to[si].x.toFixed(1)},${(to[si].y + 4).toFixed(1)})`);
+    }
   }
 
   // ── selection ────────────────────────────────────────────────────────────────
@@ -411,157 +535,126 @@ if (field && payloadEl) {
   const panels = new Map<string, HTMLElement>();
   document.querySelectorAll<HTMLElement>('[data-metro-panel]').forEach((p) => {
     panels.set(p.dataset.metroPanel!, p);
-    p.hidden = true;
+    p.hidden = p.dataset.metroPanel !== D.focus;
   });
 
-  const resetOpt = picker?.querySelector('option[value=""]') as HTMLOptionElement | null;
-  const RESET_TEXT = resetOpt?.textContent || '';
-  const CHOOSE_TEXT = document.querySelector('label[for="metroPick"]')?.textContent || RESET_TEXT;
-
-  let selected: string | null = null;
-  let lit: Element[] = [];
-
-  function lightCrowd(cbsa: string | null) {
-    lit.forEach((n) => n.classList.remove('lit'));
-    lit = [];
-    if (!cbsa) {
-      field.classList.remove('focused');
-      return;
-    }
-    field.classList.add('focused');
-    lit = [...field.querySelectorAll(`[data-dest="${cbsa}"], [data-origin="${cbsa}"], [data-metro="${cbsa}"]`)];
-    lit.forEach((n) => n.classList.add('lit'));
-  }
-
   function select(cbsa: string | null) {
-    selected = cbsa;
-    // The preview class outlived its own hover. Both hover guards bail once something is
-    // selected, and this function never cleared the class — so the ordinary mouse path
-    // (hover a badge, click it, move away) left `previewing` set forever, and because
-    // `.field.previewing [data-origin]` follows `.field.focused [data-origin]` at equal
-    // specificity it WON: the isolation the whole interaction depends on silently did not
-    // happen, and after a reset the resting crowd stayed at half opacity for the rest of the
-    // session. Every gate screenshot missed it because they were synthetic clicks with no
-    // hover in front of them.
-    field.classList.remove('previewing');
-    panels.forEach((p, key) => {
-      p.hidden = key !== cbsa;
+    const key = cbsa ?? 'rest';
+    if (key === cur) return;
+    prevKey = cur;
+    cur = key;
+    from = frame(prevKey, mode());
+    panels.forEach((p, k) => {
+      p.hidden = k !== cbsa;
     });
     if (atRest) atRest.hidden = cbsa !== null;
-    lightCrowd(cbsa);
-    if (cbsa) drawLines(cbsa, 1);
-    else clearLines();
-    // The phone's stage. Drawn for every selection regardless of viewport -- CSS decides which
-    // stage is visible, so a rotation from portrait to landscape never finds an empty one.
-    if (compassHost) {
-      drawCompass(compassHost, { metros: data.compass, hues: data.hues, names: data.names }, cbsa);
-      compassHost.setAttribute('aria-hidden', String(cbsa === null));
-    }
-    svg.querySelectorAll('g[data-metro]').forEach((g) => {
-      const on = (g as SVGGElement).dataset.metro === cbsa;
+    if (onSel) onSel.hidden = cbsa === null;
+    hits.forEach((g) => {
+      const on = g.dataset.metro === cbsa;
       g.classList.toggle('sel', on);
       g.setAttribute('aria-pressed', String(on));
     });
     if (picker && picker.value !== (cbsa ?? '')) picker.value = cbsa ?? '';
-    // The reset option is the only visible text on the control at rest, and "Show every metro"
-    // read as a filter that was already off — an instruction arguing against being touched.
-    // It is only true once something is chosen.
-    if (resetOpt) resetOpt.textContent = cbsa ? RESET_TEXT : CHOOSE_TEXT;
+    over!.classList.toggle('focused', cbsa !== null);
+    render(true);
     if (live) {
       const p = cbsa ? panels.get(cbsa) : null;
-      // Cleared first, so re-selecting the same metro still announces.
       live.textContent = '';
       live.textContent = p ? p.dataset.announce || '' : atRest?.textContent || '';
     }
   }
 
-  // ── the badges become the control ────────────────────────────────────────────
-  // The crowd's own landmarks are the selector. A transparent disc goes over each badge so
-  // the target is finger-sized on a phone without changing what is drawn.
-  let downX = 0;
-  let downY = 0;
-  let tapping = false;
-
-  svg.querySelectorAll<SVGGElement>('g[data-metro]').forEach((g) => {
-    const cbsa = g.dataset.metro!;
-    const h = hub.get(cbsa);
-    g.setAttribute('tabindex', '0');
-    g.setAttribute('role', 'button');
-    g.setAttribute('aria-label', data.aria[cbsa] ?? '');
-    g.setAttribute('aria-pressed', 'false');
-    g.setAttribute('class', 'badge');
-    if (h) {
-      const hit = document.createElementNS(SVG_NS, 'circle');
-      hit.setAttribute('cx', String(h.x));
-      hit.setAttribute('cy', String(h.y));
-      hit.setAttribute('r', String(Math.max(h.r, 21)));
-      hit.setAttribute('fill', 'transparent');
-      hit.setAttribute('class', 'hit');
-      g.appendChild(hit);
-    }
-
-    // WebKit swallows the first tap's click on any mark whose mouseenter mutates the DOM,
-    // so a coarse pointer selects on pointerup with a movement guard; the mouse keeps click.
-    g.addEventListener('click', () => select(cbsa));
-    g.addEventListener('pointerdown', (e) => {
-      downX = e.clientX;
-      downY = e.clientY;
-      tapping = e.pointerType !== 'mouse';
-    });
-    g.addEventListener('pointercancel', () => {
-      tapping = false;
-    });
-    g.addEventListener('pointerup', (e) => {
-      if (!tapping) return;
-      tapping = false;
-      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) return;
-      select(cbsa);
-    });
-    g.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
+  if (D.focus === null) {
+    let downX = 0;
+    let downY = 0;
+    let tapping = false;
+    hits.forEach((g) => {
+      const cbsa = g.dataset.metro!;
+      // WebKit swallows the first tap's click on a mark whose pointer handling mutates the
+      // DOM, so a coarse pointer selects on pointerup behind a movement guard; the mouse
+      // keeps click. pointercancel is what replaces pointerleave on touch.
+      g.addEventListener('click', () => select(cbsa));
+      g.addEventListener('pointerdown', (e) => {
+        downX = e.clientX;
+        downY = e.clientY;
+        tapping = e.pointerType !== 'mouse';
+      });
+      g.addEventListener('pointercancel', () => {
+        tapping = false;
+      });
+      g.addEventListener('pointerup', (e) => {
+        if (!tapping) return;
+        tapping = false;
+        if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) return;
         select(cbsa);
-      }
+      });
+      g.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          select(cbsa);
+        }
+      });
     });
-    // The preview is what tells a reader the picture answers to them before they commit to
-    // a click. Hover only: a coarse pointer has no hover, and a tap goes straight through.
-    // 0.7, not 0.42. The preview is the moment a reader learns the picture answers to them,
-    // and at 0.42 — compounding with the old gradient's 0.1 lead-in — the value-carrying end
-    // of every ribbon landed at 3.8% alpha, so the discovery frame was the faintest image on
-    // the page.
-    g.addEventListener('pointerenter', (e) => {
-      if (e.pointerType !== 'mouse' || selected) return;
-      field.classList.add('previewing');
-      drawLines(cbsa, 0.7);
-    });
-    g.addEventListener('pointerleave', (e) => {
-      if (e.pointerType !== 'mouse') return;
-      field.classList.remove('previewing');
-      if (!selected) clearLines();
-    });
-    g.addEventListener('focus', () => {
-      if (selected) return;
-      field.classList.add('previewing');
-      drawLines(cbsa, 0.7);
-    });
-    g.addEventListener('blur', () => {
-      field.classList.remove('previewing');
-      if (!selected) clearLines();
-    });
-  });
 
-  // Anywhere on the plate that is not a metro is the way back to the whole crowd.
-  svg.addEventListener('pointerup', (e) => {
-    if (!(e.target as Element).closest?.('g[data-metro]')) select(null);
-  });
-  // …and so is Escape, which was the only way out a keyboard had none of.
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && selected) select(null);
-  });
+    over!.addEventListener('pointerup', (e) => {
+      if (!(e.target as Element).closest?.('g[data-metro]')) select(null);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && cur !== 'rest') select(null);
+    });
+    picker?.addEventListener('change', () => select(picker.value || null));
+  }
 
-  picker?.addEventListener('change', () => select(picker.value || null));
+  // ── the box the mark lives in ────────────────────────────────────────────────
+  // A canvas fixed to its container must refresh from the container's own box, not from a
+  // window resize: a phone collapsing its URL bar changes the box without firing one.
+  //
+  // AND IT MUST NOT CANCEL A TRANSITION IT DID NOT CAUSE. The observer fires on every
+  // layout pass, and the naive handler re-rendered without animation each time — so the
+  // band growing by seven pixels when a readout appeared silently killed the re-form that
+  // the same click had just started. The mark looked like it was snapping instead of
+  // moving, and nothing in the code said so. Geometry is in viewBox units, so a box change
+  // mid-flight only needs a new transform, not a new frame.
+  let lastW = -1;
+  let lastH = -1;
+  new ResizeObserver(() => {
+    const box = stage!.getBoundingClientRect();
+    if (Math.abs(box.width - lastW) < 0.5 && Math.abs(box.height - lastH) < 0.5) return;
+    lastW = box.width;
+    lastH = box.height;
+    if (running) {
+      fit();
+      placeLabels(mode());
+    } else {
+      render(false);
+    }
+  }).observe(stage);
+  NARROW.addEventListener('change', () => {
+    cache.clear();
+    render(false);
+  });
 
   const initial = decodeURIComponent(location.hash.replace('#', ''));
-  if (initial && panels.has(initial)) select(initial);
-  else select(null);
+  if (D.focus === null && initial && panels.has(initial)) {
+    cur = initial;
+    prevKey = 'rest';
+    from = frame('rest', mode());
+    panels.forEach((p, k) => {
+      p.hidden = k !== initial;
+    });
+    if (atRest) atRest.hidden = true;
+    if (onSel) onSel.hidden = false;
+    if (picker) picker.value = initial;
+    over.classList.add('focused');
+    hits.forEach((g) => {
+      const on = g.dataset.metro === initial;
+      g.classList.toggle('sel', on);
+      g.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  // Fonts land after the first frame and every label was measured against a fallback until
+  // they do, so the placement is run again once the real Archivo is in.
+  render(false);
+  if ('fonts' in document) document.fonts.ready.then(() => placeLabels(mode()));
 }

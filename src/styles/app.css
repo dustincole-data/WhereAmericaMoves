@@ -68,11 +68,20 @@
  * the slack it leaves is the page's own ground, so there is no visible box.
  */
 
+/* THE MARK'S HEIGHT IS NOT THE BAND'S BUSINESS, and a floor could not make it so. The stage
+   used to take `1fr` of whatever the band left, so every pixel the band grew came out of the
+   mark: measured across all thirty selections, the band ran 136→141 at 1440, 136→156 at 1024
+   and 136→204 at 900, because the readout's flex row wraps on the length of a metro's name.
+   A min-height set to the worst case at one width is wrong at every other one — which is how
+   the shipped page had this defect too, at 122.
+   So the stage is given a height of its own and the band's growth pushes the key strip down
+   instead of shrinking the picture. The mark is then the same size before and after a click
+   at every width, which is what stops it moving under the pointer and what stops a resize
+   from cancelling the re-form the click started. */
 .hero {
-  height: calc(100svh - var(--headerH));
-  min-height: 460px;
+  min-height: calc(100svh - var(--headerH));
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto max(340px, calc(100svh - var(--headerH) - 136px - 48px)) auto;
 }
 /* A BAND, not a rail, and the arithmetic is the reason. A 1240×812 plate is squarer than any
    laptop viewport, so it is always height-bound: at 1440×900 it fits at 1307×856 and uses 91%
@@ -96,8 +105,13 @@
      wraps at different widths for different metros — measured at 1440: Baltimore, Chicago and
      Miami land at 114px, Los Angeles, New York and Washington at 121 — so a floor set to the
      resting height moves the map under the pointer on some clicks and not others, which is
-     worse than moving it on all of them. */
-  min-height: 122px;
+     worse than moving it on all of them.
+     RE-MEASURED for the cluster mark, because the selected state gained a line: the key to
+     the selected view sits in the same slot the invitation does, and the readout is now
+     under it rather than instead of it. At 122 the band grew to 129 on every selection, the
+     stage lost eight pixels under the pointer, and the ResizeObserver that saw it cancelled
+     the re-form the click had just started. Measured across all thirty at two widths. */
+  min-height: 136px;
   padding: 0 var(--gutter) 0.5rem;
 }
 .band h1 {
@@ -324,128 +338,91 @@
   line-height: 1.4;
 }
 
-/* ── the field, and the mark drawn on top of it ─────────────────────────────── */
+/* ── the mark: a canvas of dots, and the names over it ──────────────────────────
+ *
+ * Two layers, one coordinate space. The canvas holds every dot, every thread and the three
+ * fixed glyphs; the SVG above it holds the thirty names and the thirty controls, because a
+ * name has to be real text a screen reader can reach and a canvas has none. `hero.ts` gives
+ * the canvas exactly the transform `preserveAspectRatio="xMidYMid meet"` gives the overlay,
+ * so a label and the cluster it names cannot disagree by a pixel.
+ */
 
-/* Absolute only inside the hero, where it fills a box the page gave the plate's own aspect
-   ratio. The thirty metro pages draw the same plate in ordinary flow. */
-.stage .field {
+.stage #dots,
+.stage .over {
   position: absolute;
   inset: 0;
-}
-/* preserveAspectRatio defaults to `xMidYMid meet`, so the plate letterboxes itself inside
-   whatever box the rail leaves — as large as it can be, whole, and centred. */
-.stage .field svg {
+  width: 100%;
   height: 100%;
 }
-/* Full bleed. 09's route 2 draws the crowd cropped by the plate edge rather than floating
-   in a moat, and the wrap's gutter was putting it back in one. */
+/* The size is set on the <svg> by `hero.ts`, in user units derived from the scale, so a
+   name renders at the same real pixel size at every viewport and in both boxes. The value
+   here is only what the first frame uses before the script measures anything. */
+.over {
+  font-size: 14px;
+  stroke-width: 3.2px;
+}
+.over text {
+  font-family: var(--font-sans);
+  font-size: inherit;
+  font-weight: 500;
+  fill: var(--ink);
+  pointer-events: none;
+  /* The ground-coloured halo is why a name is readable ON the mark rather than only beside
+     it. Four slots are tried first and most names clear one; the halo is what lets the two
+     or three that clear none ship anyway instead of being dropped, which is the whole
+     objection this form exists to answer. */
+  paint-order: stroke;
+  stroke: var(--ground);
+  stroke-width: inherit;
+  stroke-linejoin: round;
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.over text.strong {
+  font-weight: 600;
+}
+/* Under selection the twenty-nine names the threads point AT stay readable. 12's reading 3
+   recorded what happens when they do not: the mark's whole claim is a relation between two
+   metros, and a reader who cannot read the far end has lost half of it. Muted ink on the
+   ground measures 5.6:1. */
+.over.focused text.quiet {
+  fill: var(--muted);
+}
+.over .srctag {
+  font-size: 0.86em;
+  font-weight: 600;
+  fill: var(--ink-2);
+}
+.over .hits g {
+  cursor: pointer;
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.over .hits g:focus {
+  outline: none;
+}
+.over .hits g:focus-visible .hit,
+.over .hits g.sel .hit {
+  fill: color-mix(in srgb, var(--claim) 12%, transparent);
+  stroke: var(--claim);
+  stroke-width: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .over text,
+  .over .hits g {
+    transition: none;
+  }
+}
+
+/* Full bleed on the thirty share pages: the mark is cropped by the page edge rather than
+   floating in a moat, and the wrap's gutter was putting it back in one. */
 .fieldfig {
   margin: 0 0 3rem;
 }
-.fieldfig .field {
+.fieldfig .focusstage {
   width: 100vw;
   margin-left: 50%;
   transform: translateX(-50%);
-}
-.field svg {
-  display: block;
-  width: 100%;
+  aspect-ratio: 1240 / 800;
   height: auto;
-}
-.field text {
-  font-family: var(--font-sans);
-  pointer-events: none;
-}
-
-.field [data-origin],
-.field [data-metro],
-.field [data-halo] {
-  transition: opacity var(--isolate-ms) ease;
-}
-/* The connective wash goes quiet the moment lines are on screen, and it is a CONTRAST rule,
-   not a taste one. An arrival is drawn in the origin's `read` hue at 0.62 alpha, which is
-   2.33:1 against the bare ground — already under the 3:1 floor before this layer existed,
-   and a pre-existing defect this ticket does not own. Over the wash at full strength the
-   same line measures 2.13:1, so the layer would have made a failing figure worse. At 0.3 it
-   measures 2.37:1 — past the bare-ground baseline, at the worst read hue over the darkest
-   pixel the layer draws. It dims rather than disappears because the wash IS the
-   field's body colour; taking it to 0.09 with the marks turns the plate white on every
-   selection. No `.lit` exception: the crowd at 1 against neighbours at 0.09 already carries
-   the isolation, and one tint held up would spend the whole margin back.
-   `previewing` is a badge hover, not a field hover, so this never fires as the pointer
-   crosses the crowd — the flicker the rule below guards against does not apply. */
-.field.focused [data-halo],
-.field.previewing [data-halo] {
-  opacity: 0.3;
-}
-/* THE BADGES DO NOT GO DOWN WITH THE CROWD, and this is the single most consequential line
-   in the file. One rule used to dim `[data-origin]` and `[data-metro]` together to 0.09,
-   which composites the baked #15181d label to 1.20:1 — so the instant you selected a metro,
-   the names of the twenty-nine places its lines point AT became unreadable. The mark's whole
-   claim is "one direction between two metros"; the reader could see the direction and could
-   not read the far end. It also took the keyboard focus ring down with it, since the focus
-   indicator is a stroke on the badge's own ring. Marks go to 0.09; badges hold at 0.42, which
-   lands the label at 3.6:1 and the crowd still reads as isolated. */
-.field.focused [data-origin] {
-  opacity: var(--dim);
-}
-.field.focused [data-metro] {
-  opacity: 0.42;
-}
-.field.focused [data-origin].lit,
-.field.focused [data-metro].lit,
-.field.focused [data-metro]:focus-visible {
-  opacity: 1;
-}
-/* A hover preview is a whisper, not a selection: the crowd stays up and the lines arrive
-   under it. Dimming on hover would make the page flicker as the pointer crosses it. */
-.field.previewing [data-origin] {
-  opacity: 0.5;
-}
-/* The plate bakes its labels at font-size 8 in a 1240-unit viewBox, which renders at 7.4px on
-   a 1440 screen — the smallest type on the page, on its primary object, naming the only thing
-   the reader can click. CSS beats the presentation attribute.
-   THE NUMBER HAS A CEILING AND 10.6 WAS OVER IT. A badge's radius is computed from the
-   8-unit metric — `max(18, half the widest line + 6)` — so bumping the type here without
-   touching the ring is the page overflowing a shape the plate sized for something smaller:
-   at 10.6 (1.325×) fourteen of the thirty labels sat outside their own ring, worst San
-   Francisco by 2.6 units. No plate check can catch it; F1 measures the plate at its own
-   scale, where it passes. Raising the plate to 10.6 instead is not free — it takes the
-   largest badge 32.4 → 41.0, the hub displacement 2.48% → 3.39% against G2's 3.5% bar, and
-   leaves 7 marks sharing a footprint, so it is a relaxation retune, not a number swap.
-   The generator's own metric put the ceiling at 9.67, and the BROWSER DISAGREES — its
-   Archivo is a little wider than `text_w()`'s per-character approximation, so 9.6 measured
-   0/30 outside on desktop and still 1/30 on a phone (San Antonio, by 0.27px). Measured, not
-   trusted: half-width against the rendered radius, the same rule the ring was sized with, at
-   both widths. 9.2 is 0/30 at both with ≥1.36px of air, and is still 15% above the plate's
-   baked 8. Numbers at 10.6 for comparison: 11/30 outside on desktop, 10/30 on a phone,
-   worst San Antonio by 2.45px. */
-.field .badge text {
-  font-size: 9.2px;
-}
-
-/* The badges are the control. Nothing about them is redrawn — a transparent disc goes over
-   each one so the target is finger-sized, and the ring the plate already drew is what
-   thickens when it is chosen. */
-.field .badge {
-  cursor: pointer;
-}
-.field .badge:focus {
-  outline: none;
-}
-.field .badge:focus-visible circle:nth-of-type(2) {
-  stroke-width: 4;
-}
-.field .badge.sel circle:nth-of-type(2) {
-  stroke-width: 4.5;
-}
-.field .lines {
-  pointer-events: none;
-}
-.field .ln-out,
-.field .ln-in,
-.field .ln-absent {
-  pointer-events: none;
 }
 
 .legend {
@@ -690,15 +667,15 @@
 
 /* ── the hero, stacked ──────────────────────────────────────────────────────────
  *
- * A rail beside a map needs a screen wide enough for both. Below about 860px it stacks, in
- * the order the ruling put them: the sentence, the map, the record.
+ * A rail beside a mark needs a screen wide enough for both. Below about 860px it stacks, in
+ * the order the ruling put them: the sentence, the mark, the record.
  *
- * And on a phone the map scrolls sideways instead of shrinking. At 390px a 1240-unit plate
- * renders its badges at 13px across and its labels at 2.5px — the shipped page answered that
- * by deleting the labels, which costs the *crowd with landmarks* property 03 locked and
- * leaves a phone reader thirty anonymous rings they cannot hit. Drawn at 2.4× the viewport
- * the badges are finger-sized and the names are back; the cost is that the whole country is
- * not on screen at once, which is what a map does on a phone.
+ * THE SIDEWAYS SCROLLER IS GONE WITH THE MAP IT SERVED. Round 3 drew the country at 300% of
+ * a phone's width because thirty metros at real geography cannot be read at 390px, and the
+ * gate's first requirement was the opposite: all thirty visible at once, on a phone, without
+ * scrolling sideways. Below 720px the mark abandons geography and lays the same thirty
+ * clusters on a four-column grid, which is the ruled form and the first layout in this
+ * effort to meet that bar.
  */
 @media (max-width: 860px) {
   .hero {
@@ -774,6 +751,11 @@
     order: 4;
     height: auto;
   }
+  /* The grid's own box, so the stage asks for exactly the height the mark needs and the
+     record below it starts where the mark stops. */
+  .hero .stage {
+    aspect-ratio: 390 / 748;
+  }
   /* `display: contents` on .band lifts its children into the hero's own flex order, and the
      key strip is not one of them — without an explicit order it defaults to 0 and lands above
      the headline. */
@@ -783,16 +765,6 @@
   }
   .panel .readout {
     order: 6;
-  }
-  .stage .field {
-    position: static;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-  }
-  .stage .field svg {
-    width: 300%;
-    min-width: 900px;
-    height: auto;
   }
 }
 
@@ -836,70 +808,20 @@
   }
 }
 
-/* ── the phone's stage ──────────────────────────────────────────────────────────
+/* ── the phone's mark ──────────────────────────────────────────────────────────
  *
- * Two stages, one visible at a time, and the swap is CSS rather than JavaScript so a
- * rotation never lands on an unbuilt one. `compass.ts` draws for every selection at every
- * width; only this decides which is on screen.
+ * ONE STAGE NOW, NOT TWO. Round 4 kept a second drawing for the phone — the compass — and
+ * swapped between them in CSS, because the country at 390px rendered a metro name at 4.7px
+ * and the shipped answer was to delete the names. The grid needs neither: all thirty are on
+ * screen at their own size, so the type stays and there is nothing to swap to.
  *
- * AT REST ON A PHONE THE MAP STAYS AND ITS TYPE GOES. The country does not fit — at 390px
- * the plate scales to 0.315 and a metro name renders at 4.7px, which is the defect, not the
- * map. But the resting message is "thirty metros, each with a hole in its record", and the
- * marks carry that on their own. So the labels are hidden rather than the picture, and the
- * names arrive on selection, in the compass, at a size a person can read.
+ * The overlay's viewBox changes with the breakpoint, which is the one thing a stylesheet
+ * cannot do — `hero.ts` sets it in the same place it sets the canvas transform, so the two
+ * layers change box together or not at all.
  */
-.compass {
-  display: none;
-}
-.compass svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
 @media (max-width: 720px) {
-  .stage .field svg {
-    width: 100%;
-    height: auto;
-  }
-  .stage .field text {
-    display: none;
-  }
-  /* Once a metro is chosen the compass IS the stage: it answers the question the map cannot
-     at this width — which places, in which direction, how many. */
-  .stage:has(.compass[aria-hidden='false']) .field {
-    display: none;
-  }
-  .compass[aria-hidden='false'] {
-    display: block;
-    padding: 0 var(--gutter) 0.5rem;
-  }
-}
-
-/* ── the resting map's second view ──────────────────────────────────────────── */
-.viewpick {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-.viewpick label {
-  cursor: pointer;
-}
-.viewpick input {
-  accent-color: var(--claim);
-  cursor: pointer;
-}
-/* The morph is the point: the same thirty marks, resized in place, so a reader sees WHICH
-   metro grew rather than a new picture appearing. Radius is animatable on an SVG circle in
-   every browser this ships to; anything that cannot is left with the instant swap, which is
-   correct rather than degraded. */
-.field g[data-metro] circle {
-  transition: r 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .field g[data-metro] circle {
-    transition: none;
+  .over {
+    font-size: 11px;
+    stroke-width: 2.6px;
   }
 }

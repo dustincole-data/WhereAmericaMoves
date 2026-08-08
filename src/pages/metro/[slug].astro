@@ -7,20 +7,22 @@
 // author-versus-reader rule would be flipped by a build flag — and a rule a build flag can
 // flip is not a rule. A readout of a cell's own value names nothing, whoever elected it.
 //
-// The partner set is the hero's own crowd, filtered to this metro's marks: the same
-// geometry, the same cells, one encoding. No rank, no "trades most with", no top-N cut —
-// the illegality of a top-N lives in the SET, not in any one label, which is exactly the
-// judgment code cannot make.
+// The figure is the SAME MARK the home page draws, opened on this metro and with the
+// controls off. It used to be the old crowd plate filtered to this metro's ribbons; that
+// mark no longer exists anywhere, so leaving it here would have shipped thirty pages
+// carrying a drawing the rest of the site had replaced and a caption describing neither.
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import MetroReadout from '../../components/MetroReadout.astro';
 import { METROS } from '../../lib/metros';
-import { assertPlate } from '../../lib/package';
+import { buildField } from '../../lib/field';
+import { WIDE } from '../../lib/clusters';
 import { metroCopy } from '../../copy';
 import { say } from '../../copy/record';
+import { SOURCE_TAG } from '../../copy';
 
-import fieldSvgRaw from '../../assets/09-field.svg?raw';
+import hues from '../../assets/09-hues.json';
 
 export function getStaticPaths() {
   return METROS.map((m) => ({ params: { slug: m.slug }, props: { cbsa: m.cbsa } }));
@@ -28,7 +30,22 @@ export function getStaticPaths() {
 
 const { cbsa } = Astro.props as { cbsa: string };
 const m = metroCopy(cbsa);
-const fieldSvg = assertPlate(fieldSvgRaw, '09-field.svg');
+
+// Two views reach this page rather than thirty-one: the one it opens on, and the resting
+// country it would return to. Nothing else is worth the bytes on a share page.
+const field = buildField();
+const placed = field.codes.map((c) => metroCopy(c));
+const heroData = {
+  codes: field.codes,
+  views: { rest: field.views.rest, [cbsa]: field.views[cbsa] },
+  wpos: { rest: field.wpos.rest, [cbsa]: field.wpos[cbsa] },
+  ppos: field.ppos,
+  hues: Object.fromEntries(
+    field.codes.map((c) => [c, (hues.metros as Record<string, { hub: string }>)[c]?.hub ?? '#15181d'])
+  ),
+  focus: cbsa,
+};
+const sel = field.codes.indexOf(cbsa);
 
 const site = Astro.site!;
 const canonical = new URL(`/metro/${m.slug}`, site).href;
@@ -50,8 +67,41 @@ const back = say('Every metro, and the record they come from', 'apparatus');
 
     <MetroReadout m={m} heading="h1" />
 
-    <figure class="fieldfig focusfig">
-      <div class="field focused" data-focus={m.cbsa} role="img" aria-label={m.partners.text} set:html={fieldSvg} />
+    <figure class="fieldfig">
+      <div class="stage focusstage" id="stage">
+        <canvas id="dots" aria-hidden="true"></canvas>
+        <svg
+          id="over"
+          class="over focused"
+          viewBox={`0 0 ${WIDE.w} ${WIDE.h}`}
+          preserveAspectRatio="xMidYMid meet"
+          role="group"
+          aria-label={m.partners.text}
+        >
+          <g class="hits">
+            {placed.map((p) => (
+              <g data-metro={p.cbsa} aria-hidden="true">
+                <circle class="hit" cx="0" cy="0" r="18" fill="transparent" />
+              </g>
+            ))}
+          </g>
+          <g class="names">
+            {placed.map((p, i) => (
+              <text
+                data-label={p.cbsa}
+                text-anchor="middle"
+                transform={`translate(${field.wpos[cbsa][i * 2]},${field.wpos[cbsa][i * 2 + 1] + 26})`}
+              >{p.name.text}</text>
+            ))}
+          </g>
+          <text
+            id="sourcetag"
+            class="srctag"
+            text-anchor="middle"
+            transform={`translate(${field.wpos[cbsa][sel * 2]},${field.wpos[cbsa][sel * 2 + 1] + 4})`}
+          >{SOURCE_TAG.text}</text>
+        </svg>
+      </div>
       <figcaption class="legend">
         <p>{m.partners.text}</p>
       </figcaption>
@@ -64,16 +114,8 @@ const back = say('Every metro, and the record they come from', 'apparatus');
     <Footer />
   </div>
 
+  <script type="application/json" id="hero-data" set:html={JSON.stringify(heroData)} is:inline></script>
   <script>
-    // The one line of client work on this page: light the marks this metro is an end of.
-    // The plate ships with data-origin / data-dest on every mark, so the filter is a
-    // querySelectorAll over geometry that is already here.
-    const f = document.querySelector<HTMLElement>('.field[data-focus]');
-    const cbsa = f?.dataset.focus;
-    if (f && cbsa) {
-      f.querySelectorAll(`[data-dest="${cbsa}"], [data-origin="${cbsa}"], [data-metro="${cbsa}"]`).forEach((n) =>
-        n.classList.add('lit')
-      );
-    }
+    import '../../lib/hero.ts';
   </script>
 </Layout>

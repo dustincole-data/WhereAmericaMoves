@@ -100,31 +100,62 @@ export const REGISTER_FRAME = say(
     it out loud rather than leaving it to area alone — one sentence, the claim's own. */
 export const COMPLEMENT = say(C0005.text, 'C0005');
 
+/** The legend for the cluster mark, and every line of it was rewritten with the form: the
+    words that shipped described ribbons, taper, hue-by-longitude and an open dot on a
+    leader, and not one of those marks exists any more.
+
+    THE SECOND SENTENCE OF THE FIRST RECORD IS LOAD-BEARING. `not_claimable` forbids "a map
+    that colours a metro by direction as a claimed fact", so the resting cluster carries its
+    two published columns as two parts rather than a verdict as one colour. Saying so is
+    what stops a reader decoding the cut as the thing the package refused to claim. */
 export const LEGEND: CopyRecord[] = [
   say(
-    'One mark is one directed pair of metros and its area is people. Hue is where the ' +
-      'destination sits, walked west to east. No cell is labeled, ranked or called out.',
+    'A cluster is one metro’s whole movement, drawn in dots of one size. The green part is ' +
+      'everyone who arrived and the red part is everyone who left, so the boundary between ' +
+      'them sits where the two published columns put it. Neither part is a verdict on which ' +
+      'way the metro went.',
     'apparatus'
   ),
   say(
-    `${ABSENT_PAIRS} of ${FRAME_PAIRS} directed pairs have no disclosed flow at all, drawn open on an empty leader.`,
+    'Choose a metro and every other cluster becomes its exchange with that one: how far ' +
+      'apart the two directions ran, green where more people came than went, red where more ' +
+      'went than came. The threads carry the same colour and the same weight.',
+    'apparatus'
+  ),
+  say(
+    'An exchange that came out even is a small grey dot rather than nothing, because a ' +
+      'measurement of zero is not the same thing as no measurement.',
+    'apparatus'
+  ),
+  say(
+    `${ABSENT_PAIRS} of ${FRAME_PAIRS} directed pairs have no disclosed flow at all, drawn as an empty dashed ring.`,
     'C0005'
   ),
 ];
 
-/** The new mark's legend. The lines exist only under selection, which is the whole reason
-    they are not the chord 03 killed three times: there is no state in which every pair is
-    drawn at once, so the middle has nothing to go to mush with. */
+/** The key that rides with the picture. Three short spans: the unit, the absence, and the
+    two things a reader would otherwise be entitled to assume and be wrong about.
+
+    The scale sentence is here because the scale is DERIVED PER VIEW and never printed. A
+    single scale across all thirty selections was measured against the real frame and
+    rejected: the largest pairwise net in the package is over a hundred times the largest in
+    the quietest metro, so one scale draws half the set as a field of single dots. The cost
+    is that two selections are not comparable to each other, and a reader is told that
+    rather than left to assume otherwise. */
 export const HERO_LINES: CopyRecord[] = [
   say(
-    'Each line is one direction between two metros, and its width where it leaves is people. ' +
-      'Arrivals run beneath it, thinner. Lines too fine to draw are drawn at the finest width ' +
-      'this piece uses, so the smallest are not to scale.',
+    'Every dot is the same size, so more dots is more people. An exchange too small to fill ' +
+      'a dot is still drawn at one dot, and those are not to scale.',
     'apparatus'
   ),
   say(
-    'A dashed line to an open dot is a direction the record discloses nothing for. It means ' +
-      'withheld or absent. It never means zero.',
+    'A dashed empty ring is a direction the record discloses nothing for. It means withheld ' +
+      'or absent. It never means zero.',
+    'apparatus'
+  ),
+  say(
+    'Sizes compare inside one view rather than between two. Where a cluster sits is a rough ' +
+      'map on a wide screen and a grid on a phone, and carries no quantity either way.',
     'apparatus'
   ),
 ];
@@ -162,7 +193,7 @@ export const BEAT_ABSENT: CopyRecord[] = [
   say(
     `Between every two of these ${N_METROS} metros there is a direction people could travel, and ` +
       `for ${ABSENT_PAIRS} of those directions the record discloses no flow at all. Select either ` +
-      `end and the line is drawn empty.`,
+      `end and the ring at the other is drawn empty.`,
     'C0005'
   ),
 ];
@@ -174,21 +205,32 @@ export const BEAT_ABSENT: CopyRecord[] = [
 // with the section they titled.
 
 export const HERO_ARIA = say(
-  'Every disclosed directed pair among these metros, one mark each, at real geography. ' +
-    'Mark area is people. Tab to a metro to draw its own record.',
+  'Thirty metros, each a cluster of dots sized by how many people it moved, divided into ' +
+    'who arrived and who left. Tab to a metro to redraw every other one as its exchange ' +
+    'with that metro.',
   'apparatus'
 );
 export const SELECT_LABEL = say('Choose a metro', 'apparatus');
-export const AT_REST = say('Select a metro to draw where its people went.', 'apparatus');
+
+/** Two invitations, one on screen at a time, and both server-rendered — the client swaps
+    which is hidden and writes no text of its own. */
+export const AT_REST = say(
+  'Each metro is a cluster of dots. Green is who arrived, red is who left, and the dashed ' +
+    'line across it is where the two would be even. Choose one to see how it trades with ' +
+    'the rest.',
+  'apparatus'
+);
+export const ON_SELECT = say(
+  'Every other metro is now its exchange with the one you chose. Green means more people ' +
+    'came than went. Red means more went than came.',
+  'apparatus'
+);
 export const RESET = say('Show every metro', 'apparatus');
 
-// The second view of the resting map. Apparatus: a control's own label asserts no quantity,
-// and the view it turns on draws the same two published cells it already drew.
-export const EQUALISE_LABEL = say('Draw every metro the same size', 'apparatus');
-export const EQUALISE_NOTE = say(
-  'Size is how many people left. Turn it off and every metro is one ring, so the holes can be compared directly.',
-  'apparatus',
-);
+/** The label on the selected metro's own ring. It is drawn at a fixed size because it is
+    what the others are measured from, so the word has to say that the ring is an origin
+    rather than a quantity. */
+export const SOURCE_TAG = say('from here', 'apparatus');
 
 // ── the metro readout ──────────────────────────────────────────────────────────
 
@@ -229,7 +271,21 @@ export interface MetroCopy {
     and suppressed columns together, and `rest_sup_total` added the in and out residuals.
     Both are spoken aggregates of frame cells, which `contract.aggregation` says need a
     claim or a figure. Every number below is one cell, printed as itself. */
+/** Memoised, and it is the ledger that needs it rather than the clock. Every `say` appends,
+    so building one metro's copy twice writes every one of its records twice — and the thirty
+    share pages each name all thirty metros in the mark's overlay. Unmemoised that is thirty
+    thousand duplicate records for the lint to re-check, all of them the same sentence. */
+const METRO_COPY = new Map<string, MetroCopy>();
+
 export function metroCopy(cbsa: string): MetroCopy {
+  const memo = METRO_COPY.get(cbsa);
+  if (memo) return memo;
+  const built = buildMetroCopy(cbsa);
+  METRO_COPY.set(cbsa, built);
+  return built;
+}
+
+function buildMetroCopy(cbsa: string): MetroCopy {
   const m = METRO_BY_CBSA.get(cbsa)!;
   const t = TOTALS_BY_CBSA.get(cbsa)!;
   const F: 'metro_totals' = 'metro_totals';
@@ -276,8 +332,9 @@ export function metroCopy(cbsa: string): MetroCopy {
       'apparatus'
     ),
     partners: say(
-      'Its own crowd, lit. Every disclosed pair this metro is one end of, at the size the ' +
-        'publisher disclosed, in no order a reader can read as a ranking.',
+      'Every other metro, redrawn as its exchange with this one. Green where more people ' +
+        'came here than went there, red where more went than came, and a dashed empty ring ' +
+        'where the record discloses nothing in one of the two directions.',
       'apparatus'
     ),
     aria: say(`${m.short}, ${m.state}. Select to read its record.`, 'apparatus'),

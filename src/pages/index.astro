@@ -1,42 +1,36 @@
 ---
-// THE SHAPE, rebuilt after 12's gate. What changed and what did not:
+// THE SHAPE. What the 2026-08-07 form ruling changed and what it did not.
 //
-// The built page ran ① the claim register → ② no county won → ③ no rates → ④ the absent
-// pairs → the explorer, five screens down. It was rejected on three things — too much text
-// at too large a size, the map arriving late, and a hero that did not answer the reader —
-// and 06's addendum of 2026-08-06 reopened exactly the three rows that produced them: the
-// arc's order, the explorer's separation, and prose volume. THE SUBJECT DID NOT REOPEN.
-// 03's P2 holds: this is a piece about the record. What changed is that the reader now
-// reaches the record by touching the map instead of by reading a paragraph above it.
+// The arc, the spine and the plumbing are untouched: the crowd is still first and still the
+// control, the claim register still sits beneath it on its own scale, the three beats are
+// still captions, and the package wiring, the copy module, the lint and the footer stamp
+// are the same files they were. What changed is the mark.
 //
-// So the crowd is first, full height, and it is the control. Select a metro and its own
-// record is drawn — every direction it sends people, every direction it receives them, and
-// the directions the publisher disclosed nothing for, drawn empty. The claim register that
-// used to open the page is directly beneath it, which is where the withheld quarter still
-// gets its own scale and its own label. C's rule is two labelled registers never summed;
-// that is about the labelling, not about which one is on top.
+// Rounds 1–4 drew 863 marks at real geography and put lines on selection. That route was
+// rejected four times on one axis — "it's just a bunch of little lines, and the volume
+// doesn't really tell them" — and 13 ruled the replacement: thirty CLUSTERS OF DOTS, in the
+// rough shape of the country on a wide screen and on a four-column grid on a phone, every
+// one of which re-forms to its own exchange with whichever metro the reader chooses.
 //
-// TYPE AND MAP DO NOT OVERLAP, ruled 2026-08-06 after the first shape gate. The round-1 draw
-// set the headline inside the plate's own empty regions — measured, and clean at rest — but
-// a metro in the north-east throws its heaviest lines straight through that corner, so the
-// composition was only honest until the reader used it. The type moves into a rail and the
-// crowd takes the whole of what is left.
+// TYPE AND MARK STILL DO NOT OVERLAP, and the band above the stage is still the reason. A
+// headline set inside the mark's own empty regions is honest only until a reader uses it.
 //
-// That costs map area and the trade is stated rather than hidden: a plate at 1240×812 is
-// squarer than any laptop viewport, so anything stacked ABOVE it shrinks it twice over —
-// once for the height taken and once for the width the aspect then gives back. Beside it,
-// the rail costs width only, and the map still fills the screen top to bottom.
+// EVERY LAYOUT IS COMPUTED HERE, AT BUILD, from the verified package: thirty-one views and
+// their relaxed positions, in `lib/field.ts`, against the same formulas `lib/clusters.ts`
+// hands the browser. The client is given counts and coordinates and derives the rest, so
+// there is no second implementation of a radius to drift.
 //
-// The plates still arrive as GEOMETRY ONLY and every sentence on them is below, in the copy
-// module. 36px baked text inside a 1240 viewBox scaled to a 390px screen renders at ~11px,
-// so a baked headline is unreadable on a phone by construction.
+// THE OVERLAY CARRIES EVERY WORD. The canvas draws no text at all; the names, the thirty
+// controls and their labels are server-rendered SVG, so the dist scan reads real strings and
+// a keyboard reaches every metro whether or not the picture drew.
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MetroReadout from '../components/MetroReadout.astro';
 import { METROS } from '../lib/metros';
-import { assertPlate, RELATIONS } from '../lib/package';
-import { readPlate } from '../lib/plate';
+import { assertPlate } from '../lib/package';
+import { buildField } from '../lib/field';
+import { WIDE } from '../lib/clusters';
 import { metroCopy } from '../copy';
 import {
   HOME_TITLE,
@@ -60,50 +54,38 @@ import {
   HERO_ARIA,
   SELECT_LABEL,
   AT_REST,
+  ON_SELECT,
   RESET,
-  EQUALISE_LABEL,
-  EQUALISE_NOTE,
+  SOURCE_TAG,
 } from '../copy';
 
 import claimSvgRaw from '../assets/09-claim.svg?raw';
-import fieldSvgRaw from '../assets/09-field.svg?raw';
 import hues from '../assets/09-hues.json';
-import compass from '../assets/09-compass.json';
 
-// The one check hashes do not watch: a plate drawn from an older package, sitting beside a
-// fresh manifest. Every emitted plate carries data-package; both are asserted here.
+// The one drift a hash cannot see: a plate drawn from an older package beside a fresh
+// manifest. The claim register is the last baked plate on the page and it is still asserted.
 const claimSvg = assertPlate(claimSvgRaw, '09-claim.svg');
-const fieldSvg = assertPlate(fieldSvgRaw, '09-field.svg');
 const cut = Number(/data-cut="([\d.]+)"/.exec(claimSvg)![1]);
 
-// Hubs and absent pairs are READ OFF THE PLATE rather than re-projected, so the lines cannot
-// drift away from the crowd they connect. See lib/plate.ts.
-const plate = readPlate(fieldSvg, '09-field.svg');
+const field = buildField();
+const byCbsa = new Map(METROS.map((m) => [m.cbsa, metroCopy(m.cbsa)]));
+const metros = METROS.map((m) => byCbsa.get(m.cbsa)!);
+const placed = field.codes.map((c) => byCbsa.get(c)!);
 
 const site = Astro.site!;
 const canonical = new URL('/', site).href;
 const ogImage = new URL('/og/index.png', site).href;
 
-const metros = METROS.map((m) => metroCopy(m.cbsa));
-
-// The hero's payload, inlined rather than fetched. It carries NO COPY: every string on this
-// page is server-rendered, so the client constructs nothing and the dist scan reads the real
-// text rather than a template.
+// Geometry and apparatus only. No figure of any kind travels to the client: a dot COUNT is
+// a quantity already divided by a scale this file derived, and the scale itself is never
+// sent, printed or spoken.
 const heroData = {
-  viewBox: plate.viewBox,
-  hubs: plate.hubs,
-  hues: hues.metros,
-  pairs: RELATIONS.map((r) => [r.origin, r.dest, r.people]),
-  absent: plate.absent,
-  // The badges are buttons; buttons need names. The deleted dot map used to set these and the
-  // rewrite dropped them, so thirty controls shipped nameless while `metroCopy(...).aria` sat
-  // in the ledger unrendered.
-  aria: Object.fromEntries(metros.map((m) => [m.cbsa, m.aria.text])),
-  // The phone's mark. Geometry only -- bearings and log-distances, apparatus under
-  // `contract.apparatus`, never printed. See lib/compass.ts for why the phone cannot use the
-  // field: at 390px the plate scales to 0.315 and a metro name renders at 4.7px.
-  compass: compass.metros,
-  names: Object.fromEntries(metros.map((m) => [m.cbsa, m.name.text])),
+  codes: field.codes,
+  views: field.views,
+  wpos: field.wpos,
+  ppos: field.ppos,
+  hues: Object.fromEntries(field.codes.map((c) => [c, (hues.metros as Record<string, { hub: string }>)[c]?.hub ?? '#15181d'])),
+  focus: null,
 };
 ---
 
@@ -117,27 +99,19 @@ const heroData = {
 >
   <Header />
 
-  <!-- ── the hero: one thin band, and the crowd taking the rest of the screen ── -->
+  <!-- ── the hero: one thin band, and the mark taking the rest of the screen ── -->
   <section class="hero">
     <div class="band">
       <h1>{HEADLINE.text}</h1>
       <p class="sf">{STANDFIRST[0].text} <span>{STANDFIRST[1].text}</span></p>
 
-      <!-- One slot, on its own row, holding the invitation at rest and the selected metro's
-           record otherwise — with the band's height fixed, so a click never resizes the map
-           under the pointer. -->
+      <!-- One slot, on its own row, holding the invitation at rest, the key to the selected
+           view otherwise, and the chosen metro's own record beneath both — with the band's
+           height fixed, so a click never resizes the mark under the pointer. -->
       <div class="panel">
         <p class="atrest" id="atrest">{AT_REST.text}</p>
+        <p class="atrest" id="onsel" hidden>{ON_SELECT.text}</p>
         {metros.map((m) => <MetroReadout m={m} />)}
-      </div>
-
-      <!-- The size channel is the thing a reader cannot see past on the resting map: a disc is
-           that metro's absolute outflow, so New York dwarfs Cincinnati and the holes stop being
-           comparable. This turns it off. -->
-      <div class="viewpick">
-        <input type="checkbox" id="equalise" />
-        <label for="equalise">{EQUALISE_LABEL.text}</label>
-        <span class="vh">{EQUALISE_NOTE.text}</span>
       </div>
 
       <div class="pick">
@@ -149,18 +123,44 @@ const heroData = {
       </div>
     </div>
 
-    <div class="stage">
-      <div class="field" id="field" set:html={fieldSvg} />
-      <!-- The phone's mark. Empty at rest and empty on every desktop width; CSS decides which
-           of the two stages is on screen, and `compass.ts` fills this one on selection. -->
-      <div class="compass" id="compass" aria-hidden="true" />
-      <p class="vh">{HERO_ARIA.text}</p>
+    <div class="stage" id="stage">
+      <!-- The dots. Aria-hidden because everything it draws is reachable through the thirty
+           labelled controls in the overlay and through the readout the selection opens. -->
+      <canvas id="dots" aria-hidden="true"></canvas>
+
+      <svg
+        id="over"
+        class="over"
+        viewBox={`0 0 ${WIDE.w} ${WIDE.h}`}
+        preserveAspectRatio="xMidYMid meet"
+        role="group"
+        aria-label={HERO_ARIA.text}
+      >
+        <g class="hits">
+          {placed.map((m) => (
+            <g data-metro={m.cbsa} role="button" tabindex="0" aria-pressed="false" aria-label={m.aria.text}>
+              <circle class="hit" cx="0" cy="0" r="18" fill="transparent" />
+            </g>
+          ))}
+        </g>
+        <!-- The names ship placed against a build-time metric and are re-placed against
+             measured text the moment the client runs: only the browser can close a fit.
+             Astro keeps HTML comments, so a ticket number written here is a figure in dist
+             that traces to no ledger entry, and the backstop is right to say so. -->
+        <g class="names">
+          {placed.map((m, i) => (
+            <text
+              data-label={m.cbsa}
+              text-anchor="middle"
+              transform={`translate(${field.wpos.rest[i * 2]},${field.wpos.rest[i * 2 + 1] + 26})`}
+            >{m.name.text}</text>
+          ))}
+        </g>
+        <text id="sourcetag" class="srctag" text-anchor="middle" style="display:none">{SOURCE_TAG.text}</text>
+      </svg>
     </div>
 
-    <!-- The key rides WITH the picture, under it, where a legend belongs. It used to sit in
-         the block below a map that takes the whole viewport, so a line and its explanation
-         were never on screen together — the reader met the dashed absences a full scroll
-         before being told what they are. -->
+    <!-- The key rides WITH the picture, under it, where a legend belongs. -->
     <p class="keystrip">{HERO_LINES.map((l) => <span>{l.text}</span>)}</p>
   </section>
 
