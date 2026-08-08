@@ -443,6 +443,7 @@ if (stage && canvas && over && payloadEl) {
 
   const labels = [...over!.querySelectorAll<SVGTextElement>('text[data-label]')];
   const hits = [...over!.querySelectorAll<SVGGElement>('g[data-metro]')];
+  const keys = [...over!.querySelectorAll<SVGGElement>('g[data-metro-key]')];
   const meas = document.createElement('canvas').getContext('2d')!;
 
   function placeLabels(m: Mode) {
@@ -528,6 +529,28 @@ if (stage && canvas && over && payloadEl) {
       sourceTag.style.display = si >= 0 ? '' : 'none';
       if (si >= 0) sourceTag.setAttribute('transform', `translate(${to[si].x.toFixed(1)},${(to[si].y + 4).toFixed(1)})`);
     }
+
+    // The key sits in the box's own corner, in the same user units as the names, so
+    // it renders at the same real pixel size at every viewport — same trick as
+    // `labelUnits` itself. The corner is inside a relaxed layout, so whichever
+    // cluster the relaxation lands there varies by selection — the background is
+    // sized to the visible key's own measured box, not guessed, so it stays legible
+    // over whatever ends up underneath it.
+    const kx = m.pad;
+    const ky = m.top + fs * 1.1;
+    const keyPad = fs * 0.35;
+    keys.forEach((g) => {
+      g.setAttribute('transform', `translate(${kx.toFixed(1)},${ky.toFixed(1)})`);
+      if (g.hasAttribute('hidden')) return;
+      const text = g.querySelector('text')!;
+      const rect = g.querySelector('rect')!;
+      const b = text.getBBox();
+      rect.setAttribute('x', (b.x - keyPad).toFixed(1));
+      rect.setAttribute('y', (b.y - keyPad).toFixed(1));
+      rect.setAttribute('width', (b.width + keyPad * 2).toFixed(1));
+      rect.setAttribute('height', (b.height + keyPad * 2).toFixed(1));
+      rect.setAttribute('rx', (keyPad * 0.6).toFixed(1));
+    });
   }
 
   // ── selection ────────────────────────────────────────────────────────────────
@@ -536,6 +559,9 @@ if (stage && canvas && over && payloadEl) {
   document.querySelectorAll<HTMLElement>('[data-metro-panel]').forEach((p) => {
     panels.set(p.dataset.metroPanel!, p);
     p.hidden = p.dataset.metroPanel !== D.focus;
+  });
+  keys.forEach((t) => {
+    t.toggleAttribute('hidden', t.dataset.metroKey !== D.focus);
   });
 
   function select(cbsa: string | null) {
@@ -546,6 +572,9 @@ if (stage && canvas && over && payloadEl) {
     from = frame(prevKey, mode());
     panels.forEach((p, k) => {
       p.hidden = k !== cbsa;
+    });
+    keys.forEach((t) => {
+      t.toggleAttribute('hidden', t.dataset.metroKey !== cbsa);
     });
     if (atRest) atRest.hidden = cbsa !== null;
     if (onSel) onSel.hidden = cbsa === null;
@@ -641,6 +670,9 @@ if (stage && canvas && over && payloadEl) {
     from = frame('rest', mode());
     panels.forEach((p, k) => {
       p.hidden = k !== initial;
+    });
+    keys.forEach((t) => {
+      t.toggleAttribute('hidden', t.dataset.metroKey !== initial);
     });
     if (atRest) atRest.hidden = true;
     if (onSel) onSel.hidden = false;

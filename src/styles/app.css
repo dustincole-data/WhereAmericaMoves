@@ -392,6 +392,36 @@
   font-weight: 600;
   fill: var(--ink-2);
 }
+/* The on-chart key. A swatch carries the colour; the words stay text-coloured, so
+   identity is never colour-alone. Hex values mirror clusters.ts's GAIN_RAMP[1] /
+   LOSS_RAMP[1] — CSS cannot import the TS module, so they are copied, not derived.
+
+   THE UA's `[hidden]{display:none}` DOES NOT REACH SVG. It is an HTML-namespace
+   rule; without this line all thirty key groups share one transform and render on
+   top of each other — caught only because a puppeteer pass looked at the rest
+   state, not the selected one, where it read as a garbled overlap of every city. */
+.over .keys g[hidden] {
+  display: none;
+}
+.over .keytext {
+  text-anchor: start;
+}
+.over .keytext .dot {
+  font-size: 0.8em;
+}
+.over .keytext .dot.loss {
+  fill: #a63a12;
+}
+.over .keytext .dot.gain {
+  fill: #00695c;
+}
+/* Sized to the text's own bbox in hero.ts, not authored: the key sits in a
+   relaxed layout's own corner, so whatever the relaxation puts there varies by
+   selection and a halo alone was not enough against a dense cluster underneath. */
+.over .keybg {
+  fill: var(--ground);
+  opacity: 0.86;
+}
 .over .hits g {
   cursor: pointer;
   transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);

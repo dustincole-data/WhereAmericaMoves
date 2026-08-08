@@ -100,36 +100,18 @@ export const REGISTER_FRAME = say(
     it out loud rather than leaving it to area alone — one sentence, the claim's own. */
 export const COMPLEMENT = say(C0005.text, 'C0005');
 
-/** The legend for the cluster mark, and every line of it was rewritten with the form: the
-    words that shipped described ribbons, taper, hue-by-longitude and an open dot on a
-    leader, and not one of those marks exists any more.
-
-    THE SECOND SENTENCE OF THE FIRST RECORD IS LOAD-BEARING. `not_claimable` forbids "a map
-    that colours a metro by direction as a claimed fact", so the resting cluster carries its
-    two published columns as two parts rather than a verdict as one colour. Saying so is
-    what stops a reader decoding the cut as the thing the package refused to claim. */
+/** Cut hard 2026-08-08 — Dustin: "way too much text," this said four times what the
+    panel above the mark, the on-chart key and the beat below it already say once
+    each. One record left: the one fact those three places do not carry, and it is
+    load-bearing. `not_claimable` forbids "a map that colours a metro by direction as
+    a claimed fact", so the resting cluster carries its two published columns as two
+    parts rather than a verdict as one colour — this is the sentence that stops a
+    reader decoding the cut as the thing the package refused to claim. */
 export const LEGEND: CopyRecord[] = [
   say(
-    'A cluster is one metro’s whole movement, drawn in dots of one size. The green part is ' +
-      'everyone who arrived and the red part is everyone who left, so the boundary between ' +
-      'them sits where the two published columns put it. Neither part is a verdict on which ' +
-      'way the metro went.',
+    'A resting cluster is cut into two published columns — arrived and left — never ' +
+      'coloured by which way the metro’s total went.',
     'apparatus'
-  ),
-  say(
-    'Choose a metro and every other cluster becomes its exchange with that one: how far ' +
-      'apart the two directions ran, green where more people came than went, red where more ' +
-      'went than came. The threads carry the same colour and the same weight.',
-    'apparatus'
-  ),
-  say(
-    'An exchange that came out even is a small grey dot rather than nothing, because a ' +
-      'measurement of zero is not the same thing as no measurement.',
-    'apparatus'
-  ),
-  say(
-    `${ABSENT_PAIRS} of ${FRAME_PAIRS} directed pairs have no disclosed flow at all, drawn as an empty dashed ring.`,
-    'C0005'
   ),
 ];
 
@@ -259,6 +241,12 @@ export interface MetroCopy {
   supNote: CopyRecord;
   partners: CopyRecord;
   aria: CopyRecord;
+  /** The on-chart key, named to whichever metro is selected. Dustin asked for a label
+      ON the mark rather than another sentence below it — thirty pre-rendered pairs,
+      swapped by visibility like every other string here, so the client still
+      constructs no copy. */
+  keyLoss: CopyRecord;
+  keyGain: CopyRecord;
   totals: MetroTotals;
   /** DRAWN, never printed: the extent of this metro's unattributable residual against its
       disclosed rest-of-U.S. flow. A share is a ratio of two cells, which makes it a spoken
@@ -338,6 +326,8 @@ function buildMetroCopy(cbsa: string): MetroCopy {
       'apparatus'
     ),
     aria: say(`${m.short}, ${m.state}. Select to read its record.`, 'apparatus'),
+    keyLoss: say(`Red — left ${m.short}`, 'apparatus'),
+    keyGain: say(`Green — moved in to ${m.short}`, 'apparatus'),
     totals: t,
     supExtent:
       (t.rest_in_suppressed + t.rest_out_suppressed) /
@@ -368,24 +358,12 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
     head: say('The per-capita view is gone, and it is not coming back', 'apparatus'),
     body: [
       say(
-        'An earlier version of this piece had a toggle that divided every figure by a metro’s ' +
-          'resident population. It has been removed, and not because it was hard to maintain.',
-        'apparatus'
-      ),
-      say(
-        'The numerator and the denominator were different universes. These counts are tax filers ' +
-          'and their dependents, the individuals reported on individual income tax returns. A ' +
-          'resident population is everyone. Non-filers appear nowhere in the numerator: the very ' +
-          'poor, many elderly people, undocumented residents and some students are absent from ' +
-          'every figure here, and nothing in this data reveals how many are missing.',
-        'apparatus'
-      ),
-      say(
-        'So every rate ran low, by each place’s own non-filing share. And that share is not ' +
-          'spread evenly. It is largest exactly where a migration story usually goes looking. ' +
-          'A number wrong in a pattern is worse than a number missing, because the pattern is ' +
-          'the thing a reader takes away. The toggle is deleted rather than disabled: a ' +
-          'prohibited measure sitting one boolean away from rendering is not a safe thing to keep.',
+        'An earlier version divided every figure by a metro’s resident population. It is gone: ' +
+          'these counts are tax filers and their dependents, not residents, so non-filers — the ' +
+          'very poor, many elderly people, undocumented residents, some students — are absent ' +
+          'from every figure here, unevenly, and largest exactly where a migration story looks ' +
+          'first. The toggle was deleted rather than disabled, because a prohibited measure one ' +
+          'boolean away from rendering is not safe to keep.',
         'apparatus'
       ),
     ],
@@ -423,12 +401,10 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
       say(UNIVERSE.selection.rule.replace(/^the/, 'The') + '.', 'apparatus'),
       say(UNIVERSE.selection.measure + '.', 'apparatus'),
       say(
-        'Population was chosen over migration volume deliberately: ranking metros by how many ' +
-          'people they exchange would rank them on the same rows this piece then aggregates, so ' +
-          'the set would be drawn by the numbers it exists to measure. The IRS did not choose ' +
-          'these metros. This project did, and a different thirty would be a different set of ' +
-          'numbers. It is also not a license to divide by population. Resident population ' +
-          'selects the units and appears in no figure.',
+        'Population was chosen over migration volume deliberately, so the set is not drawn by ' +
+          'the numbers it exists to measure. The IRS did not choose these metros; this project ' +
+          'did, and it is not a license to divide by population, which selects the units and ' +
+          'appears in no figure.',
         'apparatus'
       ),
       say(UNIVERSE.selection.source + '.', 'apparatus'),

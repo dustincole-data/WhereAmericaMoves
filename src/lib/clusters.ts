@@ -53,7 +53,12 @@ export const WIDE: Mode = {
   pad: 44,
   top: 16,
   bottom: 24,
-  dotArea: 11.5,
+  // Raised ×1.3 over the shipped 11.5 — Dustin, 2026-08-08: "the dots look a little
+  // too spaced out" was fixed into this density and now he says the opposite, so it
+  // moves again. Scaled by the same factor as PHONE.dotArea, which keeps the
+  // dots-per-unit-area invariant the ticket measured (0.034 throughout) equal across
+  // both modes rather than reintroducing the ratio mismatch that invariant fixed.
+  dotArea: 15,
   dotR: 1.6,
   sourceR: 30,
   absentR: 13,
@@ -68,7 +73,10 @@ export const PHONE: Mode = {
   pad: 12,
   top: 6,
   bottom: 14,
-  dotArea: 6,
+  // ×1.3 over 6. The largest cluster across all 31 views draws 613 dots (measured
+  // from the built field data); at 7.8 that is a 39px radius against a 45.75px grid
+  // half-cell — checked so this loosening does not collide with the next cell.
+  dotArea: 7.8,
   dotR: 1.15,
   sourceR: 19,
   absentR: 9,

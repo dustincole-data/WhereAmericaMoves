@@ -328,8 +328,11 @@ checkRecords(ledger);
 // type weight is a rendering instruction, not an assertion of quantity. It only started
 // firing once the card scan began emitting real <text> nodes, which is the check reaching a
 // surface it had never actually read.
+// `dy` joins the list for the same reason `x`/`y` are already in it: the on-chart
+// key's second tspan is offset a line down with `dy="1.5em"`, which is a line-spacing
+// instruction, not a figure — the first `dy` this scan has ever had to read.
 const GEOMETRY_ATTRS =
-  /\s(?:d|viewBox|points|transform|gradientTransform|x|y|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|offset|fill|stroke|stop-color|stop-opacity|fill-opacity|stroke-opacity|opacity|stroke-width|stroke-dasharray|font-size|font-weight|letter-spacing|gradientUnits|id|class|style|href|src|value|content-type)="[^"]*"/g;
+  /\s(?:d|viewBox|points|transform|gradientTransform|x|y|dx|dy|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|offset|fill|stroke|stop-color|stop-opacity|fill-opacity|stroke-opacity|opacity|stroke-width|stroke-dasharray|font-size|font-weight|letter-spacing|gradientUnits|id|class|style|href|src|value|content-type)="[^"]*"/g;
 /** data-* carries the plate's ids and the package stamp; none of it is a rendered figure. */
 const DATA_ATTRS = /\sdata-[a-z-]+="[^"]*"/g;
 /** `content` is scanned everywhere else, because description / og:description / twitter:
