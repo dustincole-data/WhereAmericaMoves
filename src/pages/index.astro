@@ -15,10 +15,17 @@
 // TYPE AND MARK STILL DO NOT OVERLAP, and the band above the stage is still the reason. A
 // headline set inside the mark's own empty regions is honest only until a reader uses it.
 //
-// EVERY LAYOUT IS COMPUTED HERE, AT BUILD, from the verified package: thirty-one views and
-// their relaxed positions, in `lib/field.ts`, against the same formulas `lib/clusters.ts`
-// hands the browser. The client is given counts and coordinates and derives the rest, so
-// there is no second implementation of a radius to drift.
+// 14 kept that mark and moved it onto the country. The clusters now sit at their TRUE
+// d3-geoAlbers points on a real lower-48 coastline and stay there through every selection —
+// where they overlap they overlap, resolved by translucency and by a leader from each name
+// to its own point, never by nudging a metro. One stream per partner carries the exchange,
+// and its direction is the sign of it. A per-thousand toggle scales the mark and prints
+// nothing: the readout still hands over the two published cells.
+//
+// EVERY LAYOUT IS COMPUTED HERE, AT BUILD, from the verified package: sixty-one views, the
+// one position array and the coastline, in `lib/field.ts`, against the same formulas
+// `lib/clusters.ts` hands the browser. The client is given counts and coordinates and
+// derives the rest, so there is no second implementation of a radius to drift.
 //
 // THE OVERLAY CARRIES EVERY WORD. The canvas draws no text at all; the names, the thirty
 // controls and their labels are server-rendered SVG, so the dist scan reads real strings and
@@ -31,8 +38,15 @@ import { METROS } from '../lib/metros';
 import { assertPlate } from '../lib/package';
 import { buildField } from '../lib/field';
 import { WIDE } from '../lib/clusters';
-import { metroCopy } from '../copy';
+import { metroCopy, pairCopy } from '../copy';
 import {
+  STREAM_NOTE,
+  METRIC_LABEL,
+  METRIC_TOTAL,
+  METRIC_RATE,
+  SCALE_TOTAL,
+  SCALE_RATE,
+  PAIR_UNIT,
   HOME_TITLE,
   HOME_DESC,
   SITE_NAME,
@@ -71,6 +85,7 @@ const field = buildField();
 const byCbsa = new Map(METROS.map((m) => [m.cbsa, metroCopy(m.cbsa)]));
 const metros = METROS.map((m) => byCbsa.get(m.cbsa)!);
 const placed = field.codes.map((c) => byCbsa.get(c)!);
+const pairs = pairCopy();
 
 const site = Astro.site!;
 const canonical = new URL('/', site).href;
@@ -82,8 +97,10 @@ const ogImage = new URL('/og/index.png', site).href;
 const heroData = {
   codes: field.codes,
   views: field.views,
+  rates: field.rates,
   wpos: field.wpos,
   ppos: field.ppos,
+  outline: field.outline,
   hues: Object.fromEntries(field.codes.map((c) => [c, (hues.metros as Record<string, { hub: string }>)[c]?.hub ?? '#15181d'])),
   focus: null,
 };
@@ -120,6 +137,16 @@ const heroData = {
           <option value="">{RESET.text}</option>
           {metros.map((m) => <option value={m.cbsa}>{m.name.text}, {m.state.text}</option>)}
         </select>
+
+        <!-- The metric, and it only exists once a metro is chosen: the resting cluster is one
+             metro's own two published columns, and a rate has no pair to be a rate of. -->
+        <div class="metric" id="metric" hidden>
+          <span class="vh" id="metricLab">{METRIC_LABEL.text}</span>
+          <div class="seg" role="group" aria-labelledby="metricLab">
+            <button type="button" data-metric="people" aria-pressed="true">{METRIC_TOTAL.text}</button>
+            <button type="button" data-metric="rate" aria-pressed="false">{METRIC_RATE.text}</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -136,6 +163,20 @@ const heroData = {
         role="group"
         aria-label={HERO_ARIA.text}
       >
+        <!-- A leader per metro, hidden until the placement says it is owed one: the clusters
+             sit at true projected points and overlap, so a name at the rim of a merged mass
+             names the mass. The line runs to the metro's own point and ends on it. -->
+        <g class="leaders" aria-hidden="true">
+          {placed.map((m) => (
+            <g data-leader={m.cbsa} hidden>
+              <line class="lead-halo" x1="0" y1="0" x2="0" y2="0" />
+              <line class="lead-line" x1="0" y1="0" x2="0" y2="0" />
+              <circle class="lead-halo-dot" cx="0" cy="0" r="2.6" />
+              <circle class="lead-pip" cx="0" cy="0" r="1.5" />
+            </g>
+          ))}
+        </g>
+
         <g class="hits">
           {placed.map((m) => (
             <g data-metro={m.cbsa} role="button" tabindex="0" aria-pressed="false" aria-label={m.aria.text}>
@@ -152,7 +193,7 @@ const heroData = {
             <text
               data-label={m.cbsa}
               text-anchor="middle"
-              transform={`translate(${field.wpos.rest[i * 2]},${field.wpos.rest[i * 2 + 1] + 26})`}
+              transform={`translate(${field.wpos[i * 2]},${field.wpos[i * 2 + 1] + 26})`}
             >{m.name.text}</text>
           ))}
         </g>
@@ -161,9 +202,8 @@ const heroData = {
         <!-- The on-chart key: which colour means what, named to whichever metro is
              selected. One of thirty, swapped by hero.ts's `select`, same mechanism as
              the readouts below — no client-built copy. The rect is sized to the
-             text's own measured box in hero.ts: the key sits in the corner of a
-             relaxed layout, so whatever cluster the relaxation lands there varies
-             by selection, and a halo alone was not enough against it. -->
+             text's own measured box in hero.ts: a halo alone was not enough
+             against whatever ends up under the corner. -->
         <g class="keys" aria-hidden="true">
           {placed.map((m) => (
             <g data-metro-key={m.cbsa} hidden>
@@ -176,10 +216,34 @@ const heroData = {
           ))}
         </g>
       </svg>
+
+      <!-- The pair readout. Every block is here in dist and merely unhidden on hover, so the
+           scan reads the real cells and the client assembles no figure of its own. Only pairs
+           with both directions disclosed have one: where a direction is missing the partner is
+           a dashed empty ring, and a card reading "no flow" would be the zero this piece
+           refuses to write. -->
+      <div class="paircard" id="paircard" hidden aria-hidden="true">
+        {pairs.map((p) => (
+          <div class="pair" data-pair={p.key} hidden>
+            {p.rows.map((r) => (
+              <div class="prow">
+                <span class="plab">{r.label.text}</span>
+                <span class:list={['pfig', 'tnum', { more: r.more }]}>{r.fig.text}</span>
+              </div>
+            ))}
+            <div class="punit">{PAIR_UNIT.text}</div>
+          </div>
+        ))}
+      </div>
     </div>
 
     <!-- The key rides WITH the picture, under it, where a legend belongs. -->
-    <p class="keystrip">{HERO_LINES.map((l) => <span>{l.text}</span>)}</p>
+    <p class="keystrip">
+      <span data-scalenote="people">{SCALE_TOTAL.text}</span>
+      <span data-scalenote="rate" hidden>{SCALE_RATE.text}</span>
+      {HERO_LINES.map((l) => <span>{l.text}</span>)}
+      <span>{STREAM_NOTE.text}</span>
+    </p>
   </section>
 
   <div class="wrap">

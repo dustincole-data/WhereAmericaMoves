@@ -38,8 +38,11 @@ const placed = field.codes.map((c) => metroCopy(c));
 const heroData = {
   codes: field.codes,
   views: { rest: field.views.rest, [cbsa]: field.views[cbsa] },
-  wpos: { rest: field.wpos.rest, [cbsa]: field.wpos[cbsa] },
+  // No `rates`: the share pages carry no controls, so they carry no toggle, so a second set
+  // of counts would be bytes nothing on the page can reach.
+  wpos: field.wpos,
   ppos: field.ppos,
+  outline: field.outline,
   hues: Object.fromEntries(
     field.codes.map((c) => [c, (hues.metros as Record<string, { hub: string }>)[c]?.hub ?? '#15181d'])
   ),
@@ -78,6 +81,16 @@ const back = say('Every metro, and the record they come from', 'apparatus');
           role="group"
           aria-label={m.partners.text}
         >
+          <g class="leaders" aria-hidden="true">
+            {placed.map((p) => (
+              <g data-leader={p.cbsa} hidden>
+                <line class="lead-halo" x1="0" y1="0" x2="0" y2="0" />
+                <line class="lead-line" x1="0" y1="0" x2="0" y2="0" />
+                <circle class="lead-halo-dot" cx="0" cy="0" r="2.6" />
+                <circle class="lead-pip" cx="0" cy="0" r="1.5" />
+              </g>
+            ))}
+          </g>
           <g class="hits">
             {placed.map((p) => (
               <g data-metro={p.cbsa} aria-hidden="true">
@@ -90,7 +103,7 @@ const back = say('Every metro, and the record they come from', 'apparatus');
               <text
                 data-label={p.cbsa}
                 text-anchor="middle"
-                transform={`translate(${field.wpos[cbsa][i * 2]},${field.wpos[cbsa][i * 2 + 1] + 26})`}
+                transform={`translate(${field.wpos[i * 2]},${field.wpos[i * 2 + 1] + 26})`}
               >{p.name.text}</text>
             ))}
           </g>
@@ -98,7 +111,7 @@ const back = say('Every metro, and the record they come from', 'apparatus');
             id="sourcetag"
             class="srctag"
             text-anchor="middle"
-            transform={`translate(${field.wpos[cbsa][sel * 2]},${field.wpos[cbsa][sel * 2 + 1] + 4})`}
+            transform={`translate(${field.wpos[sel * 2]},${field.wpos[sel * 2 + 1] + 4})`}
           >{SOURCE_TAG.text}</text>
         </svg>
       </div>

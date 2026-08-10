@@ -261,6 +261,97 @@
   font-weight: 500;
 }
 
+/* ── the metric ─────────────────────────────────────────────────────────────────
+ *
+ * Appears with the selection, because a rate has no pair to be a rate of until one is
+ * chosen. A segmented pair rather than a checkbox: both states are named, so neither has to
+ * be inferred from the absence of the other. */
+.metric {
+  margin-top: 0.45rem;
+}
+.metric[hidden] {
+  display: none;
+}
+.metric .seg {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.metric button {
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0.42rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 160ms,
+    color 160ms;
+}
+.metric button + button {
+  border-left: 1px solid var(--rule);
+}
+.metric button:hover {
+  color: var(--ink);
+}
+.metric button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--ground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .metric button {
+    transition: none;
+  }
+}
+
+/* ── the pair readout ───────────────────────────────────────────────────────────
+ *
+ * The two published cells, one per direction, floated beside the cluster the pointer is on.
+ * `hero.ts` positions it and unhides the block that was already in dist — nothing here is
+ * assembled in the browser. `.more` marks the larger of the two cells and NAMES NEITHER
+ * METRO: it echoes the colour the mark is already drawn in. */
+.paircard {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ground) 92%, #fff);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: 0.5rem 0.7rem 0.42rem;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 6%);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.paircard[hidden],
+.paircard .pair[hidden] {
+  display: none;
+}
+.paircard .prow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.4rem;
+}
+.paircard .plab {
+  color: var(--ink-2);
+}
+.paircard .pfig {
+  font-weight: 600;
+  color: var(--muted);
+}
+.paircard .pfig.more {
+  color: var(--ink);
+}
+.paircard .punit {
+  margin-top: 0.2rem;
+  font-size: 0.63rem;
+  color: var(--muted);
+}
+
 /* The mark's key, under the picture, on the same screen as it. Two sentences on one line
    where the width allows, so it costs the map about thirty pixels rather than a section. */
 .keystrip {
@@ -415,13 +506,53 @@
 .over .keytext .dot.gain {
   fill: #00695c;
 }
-/* Sized to the text's own bbox in hero.ts, not authored: the key sits in a
-   relaxed layout's own corner, so whatever the relaxation puts there varies by
-   selection and a halo alone was not enough against a dense cluster underneath. */
+/* Sized to the text's own bbox in hero.ts, not authored: a halo alone was not
+   enough against a dense cluster underneath, and what ends up under the corner
+   varies with the box. */
 .over .keybg {
   fill: var(--ground);
   opacity: 0.86;
 }
+/* ── the leader ─────────────────────────────────────────────────────────────────
+ *
+ * Drawn only where the placement says a name is ambiguous — where its cluster overlaps
+ * another, which at true projected points is Riverside inside Los Angeles and Baltimore
+ * inside Washington. The line runs to the metro's own point and ends in a pip on it, so the
+ * name is attached to a CENTRE rather than to the merged mass its rim belongs to.
+ *
+ * Two strokes per line: a ground-coloured one under a hairline, because the leader crosses
+ * the mark it is pointing into and a bare hairline over a stipple disappears into it. Same
+ * bargain as the names' own halo. `[hidden]` is an HTML-namespace rule and does not reach
+ * SVG, so the groups need the display rule explicitly — the defect that once drew all thirty
+ * on-chart keys on top of each other. */
+.over .leaders g[hidden] {
+  display: none;
+}
+.over .leaders {
+  pointer-events: none;
+}
+.over .lead-halo {
+  stroke: var(--ground);
+  stroke-width: 2.6px;
+  stroke-opacity: 0.85;
+  stroke-linecap: round;
+}
+.over .lead-line {
+  stroke: #5a5650;
+  stroke-width: 0.8px;
+  stroke-opacity: 0.62;
+  stroke-linecap: round;
+}
+.over .lead-halo-dot {
+  fill: var(--ground);
+  fill-opacity: 0.9;
+  stroke: none;
+}
+.over .lead-pip {
+  fill: var(--ink-2);
+  stroke: none;
+}
+
 .over .hits g {
   cursor: pointer;
   transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);

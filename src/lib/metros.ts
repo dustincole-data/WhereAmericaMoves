@@ -9,10 +9,11 @@
 // to the Census Bureau there, and is stated on the page once. It is not restated here,
 // because two writings of one rule is how a stale one gets trusted.
 //
-// `population` USED TO LIVE HERE and is deleted. It is a measured quantity from a
-// different dataset, it existed only to feed the per-capita mode, and `not_claimable`
-// forbids every migration rate from this source — so leaving it in the type is an
-// invitation to compute a prohibited one.
+// `population` was deleted here and is BACK, 2026-08-09, by Dustin's ruling after the
+// objection was raised once and reaffirmed: the per-1,000 view ships. It is kept out of the
+// `Metro` type and stands in its own table below, because it is not apparatus in the sense
+// the rest of this file is — it is a measured quantity from a different dataset, and the
+// distance is the point.
 //
 // CHECKED IN. Static geographic config; changes only when OMB re-delineates CBSAs.
 
@@ -62,3 +63,27 @@ export const METROS: Metro[] = [
 export const METRO_CBSAS: Set<string> = new Set(METROS.map((m) => m.cbsa));
 
 export const METRO_BY_CBSA: Map<string, Metro> = new Map(METROS.map((m) => [m.cbsa, m]));
+
+/** POPESTIMATE2023 — the July-2023 resident estimate, recovered verbatim from commit
+ *  `57a25a4`, the version that shipped the per-capita toggle before it was deleted. Not
+ *  re-derived, because a second derivation of a figure that already existed is a second
+ *  chance to get it wrong.
+ *
+ *  IT IS A DENOMINATOR AND NEVER A NUMERATOR, and no figure computed from it is ever
+ *  printed. The per-1,000 view divides a pair's net by the PARTNER metro's residents and
+ *  spends the result on a dot count — a mark, which `contract.aggregation` licenses —
+ *  while every number the page prints stays a published cell. Normalising by the SELECTED
+ *  metro instead would put one denominator under all twenty-nine and redraw Total at
+ *  another scale, which is why the partner is the divisor.
+ *
+ *  The mixed-universe objection is real and unfixable rather than answered: the numerator
+ *  counts filers and their dependents, the denominator counts every resident, and the
+ *  footer says so where the old copy used to say the view would never exist. */
+export const POPULATION: Record<string, number> = {
+  '35620': 19788976, '31080': 12881909, '16980': 9335921, '19100': 8164140, '26420': 7587646,
+  '33100': 6353900, '12060': 6333350, '47900': 6328730, '37980': 6277370, '38060': 5087631,
+  '14460': 4970657, '40140': 4707448, '41860': 4601326, '19820': 4356818, '42660': 4062857,
+  '33460': 3721774, '45300': 3370351, '41740': 3279736, '19740': 3031278, '36740': 2863651,
+  '12580': 2843966, '16740': 2818271, '41180': 2804698, '41700': 2719892, '38900': 2519045,
+  '12420': 2498809, '40900': 2435884, '38300': 2428225, '29820': 2351008, '17140': 2281096,
+};

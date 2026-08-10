@@ -1,9 +1,11 @@
 // Every layout the mark can be in, computed ONCE at build against the verified package.
 //
-// Thirty-one views: the resting country, and one per metro. Each is a dot count and a pole
-// for all thirty clusters, plus the relaxed positions for the wide layout. The client
-// derives radii, dot positions and thread widths from these with the formulas in
-// `clusters.ts` — the same file this module relaxes against, so the two cannot drift.
+// Sixty-one views: the resting country, one per metro in people, and one per metro in the
+// per-1,000 rate. Each is a dot count and a pole for all thirty clusters. Positions are NOT
+// per view any more — the thirty metros sit at their true projected points and stay there —
+// so this module also produces the one position array and the coastline they sit on. The
+// client derives radii, dot positions and ribbon widths from these with the formulas in
+// `clusters.ts`, so there is no second implementation of a radius to drift.
 //
 // WHAT IS PUBLISHED, WHAT IS DRAWN, AND WHAT IS NEITHER
 //
@@ -49,17 +51,20 @@
 // guard skipped everything at zero before reaching the branch, and the green check missed
 // it because it was only ever run against New York, which has none. Baltimore has three.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { geoAlbers } from 'd3-geo';
+import { merge } from 'topojson-client';
 import { RELATIONS, TOTALS_BY_CBSA } from './package';
-import { METROS } from './metros';
+import { METROS, POPULATION } from './metros';
 import {
   WIDE,
   PHONE,
+  coarser,
   dotsFor,
   gridLayout,
+  niceStep,
   nicePer,
-  radiusFor,
-  usLayout,
-  type Mode,
 } from './clusters';
 
 /** 1 the selected metro gained from here · −1 it lost people here · 0 the exchange came out
@@ -78,11 +83,19 @@ export interface View {
 
 export interface FieldData {
   codes: string[];
+  /** counts in people — the Total view */
   views: Record<string, View>;
-  /** flat [x0,y0,x1,y1,…] in the wide box, one entry per view */
-  wpos: Record<string, number[]>;
+  /** the same thirty selections drawn on the per-1,000 rate. Absent for `rest`, which has no
+      pair and therefore no rate: the resting cluster is two published cells and the toggle
+      does not reach it. */
+  rates: Record<string, View>;
+  /** flat [x0,y0,x1,y1,…] in the wide box. ONE array, not one per view — the clusters sit at
+      their true projected points and stay there through every selection. */
+  wpos: number[];
   /** flat, one grid for every view — the phone's cells never move */
   ppos: number[];
+  /** the lower-48 coastline, projected into the same box: [ring][point][x,y] */
+  outline: number[][][];
 }
 
 const FLOW = new Map<string, number>();
@@ -92,6 +105,68 @@ for (const r of RELATIONS) FLOW.set(`${r.origin}>${r.dest}`, r.people);
     quantity it draws is a ranking whatever the labels say. */
 export const ORDER = [...METROS].sort((a, b) => a.lon - b.lon);
 const CODES = ORDER.map((m) => m.cbsa);
+
+// ── the ground ─────────────────────────────────────────────────────────────────
+//
+// A real Albers of the lower 48, fitted to the wide box, and the thirty metros at their own
+// projected points on it. Alaska, Hawaii and the territories are dropped because no metro in
+// the set is in one and an inset would be furniture with nothing in it.
+//
+// PROJECTION IS APPARATUS. Nothing here is measured, nothing is printed, and the coastline
+// carries no quantity — it is there so a cluster's position reads as a place instead of as a
+// diagram of one. The outline is thinned to half-pixel steps: at this weight the difference
+// is invisible and the payload is a third of the size.
+
+/** The coastline is fitted SHORT of the box at the bottom, by a cluster's radius plus a line
+    of type: Miami is the southern-most point in the set and its cluster and its name both
+    have to land inside the drawing box, or the slot search has nowhere legal to put the
+    word and the mark itself clips. */
+const LOWER48 = { w: WIDE.w, h: WIDE.h, top: 14, side: 18, bottom: 60 };
+const DROP = new Set(['02', '15', '72', '78', '60', '66', '69']); // AK HI PR VI AS GU MP
+
+function ground(): { pos: Record<string, [number, number]>; outline: number[][][] } {
+  // Read from the repo root, not from this module's own URL: the SSR bundle relocates the
+  // module and `import.meta.url` follows it into `dist/.prerender/chunks`. `package.ts`
+  // resolves the verified package the same way and for the same reason.
+  const topo = JSON.parse(readFileSync(join(process.cwd(), 'public', 'vendor', 'us-states-10m.json'), 'utf8'));
+  const states = topo.objects[Object.keys(topo.objects)[0]];
+  const keep = states.geometries.filter((g: { id: string | number }) => !DROP.has(String(g.id).padStart(2, '0')));
+  const land = merge(topo, keep) as { coordinates: number[][][][] };
+
+  const projection = geoAlbers().rotate([96, 0]).center([-0.6, 38.7]).parallels([29.5, 45.5]);
+  projection.fitExtent(
+    [
+      [LOWER48.side, LOWER48.top],
+      [LOWER48.w - LOWER48.side, LOWER48.h - LOWER48.bottom],
+    ],
+    land as never
+  );
+
+  const half = (v: number) => Math.round(v * 2) / 2;
+  const outline = land.coordinates
+    .map((poly) => poly[0]) // outer ring only — the inner holes are lakes
+    .map((ring) => {
+      const out: number[][] = [];
+      let last: number[] | null = null;
+      for (const c of ring) {
+        const p = projection(c as [number, number]);
+        if (!p) continue;
+        const q = [half(p[0]), half(p[1])];
+        if (last && Math.abs(q[0] - last[0]) < 0.75 && Math.abs(q[1] - last[1]) < 0.75) continue;
+        out.push(q);
+        last = q;
+      }
+      return out;
+    })
+    .filter((r) => r.length > 40);
+
+  const pos: Record<string, [number, number]> = {};
+  for (const m of ORDER) {
+    const p = projection([m.lon, m.lat])!;
+    pos[m.cbsa] = [Number(p[0].toFixed(1)), Number(p[1].toFixed(1))];
+  }
+  return { pos, outline };
+}
 
 function sign(v: number): PoleCode {
   return v > 0 ? 1 : v < 0 ? -1 : 0;
@@ -121,71 +196,80 @@ function selectionQuantities(sel: string): { qty: Map<string, number>; pole: Map
   return { qty, pole };
 }
 
-/** The radius the relaxation must respect: what will actually be drawn, floored at the
-    fixed glyphs so an absence and a one-dot cluster reserve the same room for their name. */
-function reserveRadius(cbsa: string, sel: string | null, n: number, pole: PoleCode, m: Mode): number {
-  if (sel === cbsa) return m.sourceR + 8;
-  if (pole === 2) return m.absentR + 2;
-  if (n <= 0) return m.evenR + 8;
-  return Math.max(radiusFor(n, m), m.absentR);
+/** A whole selection's dots have to fit the stream's own budget, and the way to make them
+    fit is to COARSEN THE SCALE, never to clip at draw time. A cap applied while drawing
+    starves whichever routes ask last, which bends the encoding without saying so; a coarser
+    rung costs every cluster the same proportion and leaves the comparison intact. The rate
+    view needs the coarser rung far more often than counts do, because small metros post
+    large rates and the values spread much flatter. */
+const DOT_BUDGET = 4600;
+
+function scaledCounts(
+  qty: Map<string, number>,
+  pole: Map<string, PoleCode>,
+  sel: string,
+  rate: boolean
+): number[] {
+  const scalable = CODES.filter((c) => c !== sel && pole.get(c) !== 2).map((c) => qty.get(c)!);
+  const qmax = Math.max(...scalable, rate ? 0.01 : 1);
+  let per = rate ? niceStep(qmax / 620) : nicePer(qmax);
+  const build = (p: number) =>
+    CODES.map((c) => (c === sel || pole.get(c) === 2 ? 0 : dotsFor(qty.get(c)!, p)));
+  let n = build(per);
+  for (let i = 0; i < 10 && n.reduce((a, v) => a + v, 0) > DOT_BUDGET; i++) {
+    per = coarser(per, rate);
+    n = build(per);
+  }
+  return n;
 }
 
-function buildView(sel: string | null): { view: View; wide: number[] } {
-  let n: number[];
-  let poles: PoleCode[];
-  let cut: number[];
+function restView(): View {
+  // Two cells per cluster, both at ONE scale, so the cut sits exactly where they put it.
+  // Counted separately rather than cut out of a rounded total: rounding the gross first
+  // and then apportioning it would move the cut by up to a dot for arithmetic reasons.
+  const per = nicePer(
+    Math.max(
+      ...CODES.map((c) => {
+        const t = TOTALS_BY_CBSA.get(c)!;
+        return t.total_in + t.total_out;
+      })
+    )
+  );
+  const cut = CODES.map((c) => dotsFor(TOTALS_BY_CBSA.get(c)!.total_in, per));
+  const n = CODES.map((c, i) => cut[i] + dotsFor(TOTALS_BY_CBSA.get(c)!.total_out, per));
+  return { n, pole: CODES.map(() => 3 as PoleCode), cut };
+}
 
-  if (sel === null) {
-    // Two cells per cluster, both at ONE scale, so the cut sits exactly where they put it.
-    // Counted separately rather than cut out of a rounded total: rounding the gross first
-    // and then apportioning it would move the cut by up to a dot for arithmetic reasons.
-    const per = nicePer(Math.max(...CODES.map((c) => {
-      const t = TOTALS_BY_CBSA.get(c)!;
-      return t.total_in + t.total_out;
-    })));
-    cut = CODES.map((c) => dotsFor(TOTALS_BY_CBSA.get(c)!.total_in, per));
-    n = CODES.map((c, i) => cut[i] + dotsFor(TOTALS_BY_CBSA.get(c)!.total_out, per));
-    poles = CODES.map(() => 3 as PoleCode);
-  } else {
-    const { qty, pole } = selectionQuantities(sel);
-    // The scale is the view's own largest quantity, and the source is not on it.
-    const scalable = CODES.filter((c) => c !== sel && pole.get(c) !== 2).map((c) => qty.get(c)!);
-    const per = nicePer(Math.max(...scalable, 1));
-    n = CODES.map((c) => (c === sel || pole.get(c) === 2 ? 0 : dotsFor(qty.get(c)!, per)));
-    poles = CODES.map((c) => pole.get(c)!);
-    cut = CODES.map(() => 0);
-  }
-
-  const radius: Record<string, number> = {};
-  CODES.forEach((c, i) => {
-    radius[c] = reserveRadius(c, sel, n[i], poles[i], WIDE);
-  });
-  const pos = usLayout(ORDER, radius, WIDE);
-
-  const wide: number[] = [];
-  for (const c of CODES) {
-    wide.push(Number(pos[c][0].toFixed(1)), Number(pos[c][1].toFixed(1)));
-  }
-  return { view: { n, pole: poles, cut }, wide };
+function selectionView(sel: string, rate: boolean): View {
+  const { qty, pole } = selectionQuantities(sel);
+  // PER 1,000 DIVIDES BY THE PARTNER'S RESIDENTS, and that choice is the whole toggle.
+  // Dividing by the SELECTED metro would put one denominator under all twenty-nine, which
+  // rescales the Total view and draws exactly the same picture at a different size.
+  const scaled = new Map<string, number>();
+  for (const c of CODES) scaled.set(c, rate ? (qty.get(c)! / POPULATION[c]) * 1000 : qty.get(c)!);
+  return {
+    n: scaledCounts(scaled, pole, sel, rate),
+    pole: CODES.map((c) => pole.get(c)!),
+    cut: CODES.map(() => 0),
+  };
 }
 
 export function buildField(): FieldData {
-  const views: Record<string, View> = {};
-  const wpos: Record<string, number[]> = {};
+  const { pos, outline } = ground();
 
-  const rest = buildView(null);
-  views.rest = rest.view;
-  wpos.rest = rest.wide;
-
+  const views: Record<string, View> = { rest: restView() };
+  const rates: Record<string, View> = {};
   for (const c of CODES) {
-    const v = buildView(c);
-    views[c] = v.view;
-    wpos[c] = v.wide;
+    views[c] = selectionView(c, false);
+    rates[c] = selectionView(c, true);
   }
+
+  const wpos: number[] = [];
+  for (const c of CODES) wpos.push(pos[c][0], pos[c][1]);
 
   const grid = gridLayout(CODES, PHONE);
   const ppos: number[] = [];
   for (const c of CODES) ppos.push(Number(grid[c][0].toFixed(1)), Number(grid[c][1].toFixed(1)));
 
-  return { codes: CODES, views, wpos, ppos };
+  return { codes: CODES, views, rates, wpos, ppos, outline };
 }

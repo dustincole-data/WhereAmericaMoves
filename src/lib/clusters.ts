@@ -1,14 +1,13 @@
 // The cluster mark's geometry, and the ONE place its rules live.
 //
-// 13 ruled the form on 2026-08-07: candidate B, clusters of dots, laid out in the rough
-// shape of the country on a wide screen and on a four-column grid on a phone. This module
+// 13 ruled the form on 2026-08-07: candidate B, clusters of dots, laid out in the shape of
+// the country on a wide screen and on a four-column grid on a phone. 14 put them at their
+// TRUE projected points on a real coastline on 2026-08-09 and added the streams. This module
 // is imported by BOTH the page (which computes every layout at build, from the verified
 // package) and the client (which draws them). One copy of every formula, so a radius the
-// server relaxed against and a radius the browser draws can never disagree — which is the
-// defect the plates hit first: relaxing positions against one view's radii and drawing
-// another's piles the marks up.
+// server sized against and a radius the browser draws can never disagree.
 //
-// NOTHING HERE IS A MEASUREMENT. Coordinates, the relaxation, the reading order and the
+// NOTHING HERE IS A MEASUREMENT. Coordinates, the projection, the reading order and the
 // phyllotaxis are apparatus under `contract.apparatus`, and none of them is ever printed.
 // The only quantities that reach this file arrive as a dot COUNT, already divided by a
 // scale the page derived from published cells.
@@ -114,6 +113,25 @@ export function nicePer(qmax: number): number {
   return NICE[NICE.length - 1];
 }
 
+/** The counting ladder above stops at 1 and a rate needs to go under it — the largest
+    per-1,000 net in the set is about two, so `nicePer` would hand every view the same rung
+    and draw thirty single dots. `1 / 2 / 2.5 / 5 × 10^k` reaches down as far as the value
+    does. Same contract as `nicePer`: derived per view, never printed. */
+export function niceStep(x: number): number {
+  const k = Math.pow(10, Math.floor(Math.log10(x)));
+  const f = x / k;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * k;
+}
+
+/** The next COARSER rung, for either ladder. A render budget must coarsen the scale rather
+    than clip at draw time: a cap silently starves whichever routes ask last, which bends
+    the encoding without saying so. */
+export function coarser(per: number, rate: boolean): number {
+  if (rate) return niceStep(per * 1.5);
+  const i = NICE.indexOf(per);
+  return i >= 0 && i < NICE.length - 1 ? NICE[i + 1] : per * 2;
+}
+
 /** A value that rounds below one dot is drawn at ONE dot — the smallest mark this piece
     can make — so the smallest exchanges are not to scale. Disclosed in the keystrip, which
     is the same bargain the ribbon's width floor struck and disclosed before it. */
@@ -182,86 +200,19 @@ export function cutBands(ys: ArrayLike<number>, n: number, cut: number): Uint8Ar
 
 // ── the two layouts ────────────────────────────────────────────────────────────
 
-/** A rough conic-ish projection of the lower 48. Deliberately approximate: the ruling was
-    that the layout only has to READ as the country, gaps included. */
-export function project(lon: number, lat: number): [number, number] {
-  const lon0 = -98;
-  const lat0 = 39;
-  const k = Math.cos((lat0 * Math.PI) / 180);
-  return [(lon - lon0) * k, -(lat - lat0) * 1.24];
-}
-
-export interface Placeable {
-  cbsa: string;
-  lon: number;
-  lat: number;
-}
-
-/** Each metro at its own projected point, then relaxed until the discs stop colliding.
-    Positions drift; the silhouette survives. RELAXED AGAINST THE RADII THE CALLER IS ABOUT
-    TO DRAW — passing one view's radii and drawing another's is what piled Florida and the
-    north-east on top of each other. */
-export function usLayout(
-  metros: Placeable[],
-  radius: Record<string, number>,
-  m: Mode
-): Record<string, [number, number]> {
-  const pts = new Map<string, [number, number]>();
-  for (const p of metros) pts.set(p.cbsa, project(p.lon, p.lat));
-
-  const xs = [...pts.values()].map((p) => p[0]);
-  const ys = [...pts.values()].map((p) => p[1]);
-  const x0 = Math.min(...xs);
-  const x1 = Math.max(...xs);
-  const y0 = Math.min(...ys);
-  const y1 = Math.max(...ys);
-
-  // The label rides under its cluster, so the field stops short of the box by a line of type.
-  const lane = m.labelSize + 6;
-  const fw = m.w - 2 * m.pad;
-  const fh = m.h - m.top - m.bottom - lane;
-  // 0.94, not 0.84: the slack exists so a relaxed cluster has somewhere to go, and at 0.84
-  // it was eating an eighth of the frame in every direction before the marks were even drawn.
-  const s = Math.min(fw / (x1 - x0), fh / (y1 - y0)) * 0.94;
-  const ox = m.pad + (fw - (x1 - x0) * s) / 2 - x0 * s;
-  const oy = m.top + (fh - (y1 - y0) * s) / 2 - y0 * s;
-
-  const codes = metros.map((p) => p.cbsa);
-  const pos = new Map<string, [number, number]>();
-  for (const c of codes) {
-    const p = pts.get(c)!;
-    pos.set(c, [p[0] * s + ox, p[1] * s + oy]);
-  }
-
-  for (let pass = 0; pass < 260; pass++) {
-    for (let i = 0; i < codes.length; i++) {
-      for (let j = i + 1; j < codes.length; j++) {
-        const a = pos.get(codes[i])!;
-        const b = pos.get(codes[j])!;
-        const dx = b[0] - a[0];
-        const dy = b[1] - a[1];
-        const d = Math.hypot(dx, dy) || 0.01;
-        const need = radius[codes[i]] + radius[codes[j]] + m.gap;
-        if (d >= need) continue;
-        const push = ((need - d) / 2) * 0.55;
-        a[0] -= (dx / d) * push;
-        a[1] -= (dy / d) * push;
-        b[0] += (dx / d) * push;
-        b[1] += (dy / d) * push;
-      }
-    }
-    for (const c of codes) {
-      const p = pos.get(c)!;
-      const r = radius[c];
-      p[0] = Math.min(Math.max(p[0], m.pad + r), m.w - m.pad - r);
-      p[1] = Math.min(Math.max(p[1], m.top + r), m.h - m.bottom - lane - r);
-    }
-  }
-
-  const out: Record<string, [number, number]> = {};
-  for (const c of codes) out[c] = pos.get(c)!;
-  return out;
-}
+// THE WIDE LAYOUT IS NO LONGER COMPUTED HERE, and the relaxation it used is gone with it.
+//
+// What stood here was an approximate conic projection followed by 260 passes of collision
+// relaxation, so no two discs ever touched — which meant a metro sat wherever its neighbours
+// pushed it, and the position moved from view to view as the radii changed. 14 replaced it
+// on 2026-08-09: the clusters now sit at TRUE d3-geoAlbers points on a real lower-48
+// coastline, one fixed set of positions for all thirty-one views, and where they overlap —
+// New York/Philadelphia/Baltimore/Washington, Los Angeles/Riverside/San Diego — the overlap
+// is drawn and resolved by translucency. It is never resolved by moving a metro.
+//
+// The projection needs `d3-geo` and the outline needs the vendored topology, and neither
+// belongs in a module the browser loads, so both are computed once at build in `field.ts`
+// and arrive here as coordinates. `gridLayout` below is untouched: the phone keeps its grid.
 
 /** The phone keeps the grid — it was ruled in as it stands, and it is the only layout in
     this effort that has ever put all thirty on a phone at once without a sideways scroll.
@@ -307,6 +258,51 @@ export function quadPoint(
   const b = 2 * t * (1 - t);
   const c = t * t;
   return [a * x0 + b * cx + c * x1, a * y0 + b * cy + c * y1];
+}
+
+// ── the stream ─────────────────────────────────────────────────────────────────
+//
+// ONE STREAM PER PARTNER, AND ITS DIRECTION IS THE SIGN OF THE NET. Where the chosen metro
+// gained from a partner the dots fly partner → chosen and the stream is green; where it lost
+// them they fly the other way and the stream is orange; a measured tie sends nothing. That
+// is the same pairwise net the cluster is already made of, shown a second way — so the mark
+// finally carries volume in its own body rather than in a table beside it.
+//
+// The route is a cubic bowed off its own chord, always to the same side of the direction of
+// travel, so a partner's inbound and outbound legs can never be drawn on one line.
+
+export interface Route {
+  ax: number; ay: number; bx: number; by: number;
+  c1x: number; c1y: number; c2x: number; c2y: number;
+  len: number;
+}
+
+export function routeOf(
+  ax: number, ay: number, bx: number, by: number
+): Route {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len = Math.hypot(dx, dy) || 1;
+  const bow = Math.min(len * 0.2, 120);
+  const nx = (-dy / len) * bow;
+  const ny = (dx / len) * bow;
+  return {
+    ax, ay, bx, by, len,
+    c1x: ax + dx * 0.28 + nx, c1y: ay + dy * 0.28 + ny,
+    c2x: ax + dx * 0.72 + nx, c2y: ay + dy * 0.72 + ny,
+  };
+}
+
+export function cubicAt(rt: Route, t: number): [number, number] {
+  const u = 1 - t;
+  const a = u * u * u;
+  const b = 3 * u * u * t;
+  const c = 3 * u * t * t;
+  const d = t * t * t;
+  return [
+    a * rt.ax + b * rt.c1x + c * rt.c2x + d * rt.bx,
+    a * rt.ay + b * rt.c1y + c * rt.c2y + d * rt.by,
+  ];
 }
 
 // ── colour ─────────────────────────────────────────────────────────────────────

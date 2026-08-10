@@ -27,6 +27,7 @@ import {
   UNIVERSE,
   MANIFEST,
   PACKAGE_STAMP,
+  RELATIONS,
   TOTALS_BY_CBSA,
   frameMeta,
   type MetroTotals,
@@ -126,8 +127,7 @@ export const LEGEND: CopyRecord[] = [
     rather than left to assume otherwise. */
 export const HERO_LINES: CopyRecord[] = [
   say(
-    'Every dot is the same size, so more dots is more people. An exchange too small to fill ' +
-      'a dot is still drawn at one dot, and those are not to scale.',
+    'An exchange too small to fill a dot is still drawn at one dot, and those are not to scale.',
     'apparatus'
   ),
   say(
@@ -157,13 +157,27 @@ export const BEAT_COUNTY: CopyRecord[] = [
   ),
 ];
 
-// ── beat ③ · no rates ──────────────────────────────────────────────────────────
+// ── beat ③ · the denominator ───────────────────────────────────────────────────
+//
+// This beat used to be "No rates," and the page now ships one. Leaving the old words under a
+// working per-thousand toggle would have made the piece call its own control a liar, which is
+// worse than either position taken on its own. So the beat keeps the objection — it is
+// correct, and it is the reason the view is worth a warning — and stops claiming the piece
+// avoided it. The rate is drawn and never printed, which is the actual line that held.
 
 export const BEAT_RATES: CopyRecord[] = [
-  say('No rates.', 'apparatus'),
+  say('The denominator is a different universe.', 'apparatus'),
   say(
-    'Nothing here can be a share of a place’s population. These counts are filers; a ' +
-      'population is residents. Dividing one by the other mixes two universes.',
+    'These counts are filers and their dependents; a population is residents. Dividing one ' +
+      'by the other mixes two universes, and the answer is not the share of a place that ' +
+      'moved — non-filers are missing from the top of the fraction and present at the bottom ' +
+      'of it, unevenly, and most of all where a migration story looks first.',
+    'apparatus'
+  ),
+  say(
+    'The per-thousand view is here anyway, and it is drawn rather than stated: it changes ' +
+      'the scale the picture is on, and every number this page prints is still a single ' +
+      'published cell. No rate appears as a figure anywhere.',
     'apparatus'
   ),
 ];
@@ -208,6 +222,46 @@ export const ON_SELECT = say(
   'apparatus'
 );
 export const RESET = say('Show every metro', 'apparatus');
+
+/** The stream, in one sentence. It is the only thing on the page a reader could not work out
+    from the still picture: which way the dots run, and that their number is the same quantity
+    the cluster is made of rather than a second one. */
+export const STREAM_NOTE = say(
+  'A stream runs toward the metro that gained and away from the one that lost, and its width ' +
+    'is the size of that exchange. One pass sends exactly as many dots as the cluster it ' +
+    'comes from is made of.',
+  'apparatus'
+);
+
+// ── the metric ─────────────────────────────────────────────────────────────────
+//
+// The per-capita view was deleted in v1 and is BACK, by Dustin's ruling on 2026-08-09 after
+// the objection below was raised once and reaffirmed. The limits block used to say it was
+// never coming back; it now says what it actually is, which is the only version of this page
+// that does not contradict itself.
+//
+// NO RATE IS EVER PRINTED, in either metric. The toggle changes the scale the mark is drawn
+// on — a mark, which `contract.aggregation` licenses — and the readout keeps handing over the
+// two published cells. So there is no figure here whose citation would have to be invented:
+// a rate is a cell of no frame.
+
+export const METRIC_LABEL = say('Scale the mark by', 'apparatus');
+export const METRIC_TOTAL = say('People', 'apparatus');
+/** "Per thousand" and not "per 1,000": the numeral would be a figure in an apparatus string,
+    and it would be one asserting nothing — the divisor is a unit, not a measurement. */
+export const METRIC_RATE = say('Per thousand residents', 'apparatus');
+
+export const SCALE_TOTAL = say(
+  'Every dot is the same size, so more dots is more people.',
+  'apparatus'
+);
+export const SCALE_RATE = say(
+  'Every dot is still the same size, and here a dot is a fixed rate rather than a fixed ' +
+    'number of people: each exchange is divided by the residents of the OTHER metro. The ' +
+    'numerator counts filers and their dependents and the denominator counts every resident, ' +
+    'so the two are different universes and this is not the share of a place that moved.',
+  'apparatus'
+);
 
 /** The label on the selected metro's own ring. It is drawn at a fixed size because it is
     what the others are measured from, so the word has to say that the ring is an origin
@@ -335,6 +389,62 @@ function buildMetroCopy(cbsa: string): MetroCopy {
   };
 }
 
+// ── the pair readout ───────────────────────────────────────────────────────────
+//
+// What a reader gets for hovering a partner: THE TWO PUBLISHED CELLS, one per direction, and
+// nothing else. The pairwise net the mark is drawn from is never printed here or anywhere —
+// `contract.aggregation` licenses a mark that aggregates the cells it is made of and refuses
+// the same aggregate as a figure — so the reader is handed both directions and does the
+// comparison the picture already drew.
+//
+// Keyed by the UNORDERED pair, because the two cells do not change depending on which end
+// the reader clicked. Only pairs with both directions disclosed get one: where a direction
+// is missing the partner is a dashed empty ring, and a card reading "no flow" would be the
+// zero the whole piece refuses to write.
+
+export interface PairRow {
+  label: CopyRecord;
+  fig: CopyRecord;
+  /** the larger of the two published cells, marked so the mark's own colour is echoed rather
+      than restated in words. No metro is named a gainer or a loser (D0019); two cells are
+      shown, and which is bigger is a fact about the two cells. */
+  more: boolean;
+}
+export interface PairCopy {
+  key: string;
+  rows: PairRow[];
+}
+
+const PAIR_UNIT = say('people, each way', 'apparatus');
+export { PAIR_UNIT };
+
+export function pairCopy(): PairCopy[] {
+  const flow = new Map<string, number>();
+  for (const r of RELATIONS) flow.set(`${r.origin}>${r.dest}`, r.people);
+
+  const out: PairCopy[] = [];
+  const codes = METRO_BY_CBSA;
+  const list = [...codes.keys()];
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const [a, b] = list[i] < list[j] ? [list[i], list[j]] : [list[j], list[i]];
+      const ab = flow.get(`${a}>${b}`);
+      const ba = flow.get(`${b}>${a}`);
+      if (ab === undefined || ba === undefined) continue;
+      const na = codes.get(a)!.short;
+      const nb = codes.get(b)!.short;
+      out.push({
+        key: `${a}|${b}`,
+        rows: [
+          { label: say(`${na} → ${nb}`, 'apparatus'), fig: say(fmtInt(ab), 'top_metro_relations'), more: ab > ba },
+          { label: say(`${nb} → ${na}`, 'apparatus'), fig: say(fmtInt(ba), 'top_metro_relations'), more: ba > ab },
+        ],
+      });
+    }
+  }
+  return out;
+}
+
 // ── the limits block ───────────────────────────────────────────────────────────
 // 06 puts the second our-side finding here rather than in the arc, and v1's dead rate mode
 // is explained here in full, which serves the full-explainer preference for brand copy
@@ -355,15 +465,37 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
     ],
   },
   {
-    head: say('The per-capita view is gone, and it is not coming back', 'apparatus'),
+    head: say('The per-thousand view is back, and here is what is wrong with it', 'apparatus'),
     body: [
       say(
-        'An earlier version divided every figure by a metro’s resident population. It is gone: ' +
-          'these counts are tax filers and their dependents, not residents, so non-filers — the ' +
-          'very poor, many elderly people, undocumented residents, some students — are absent ' +
-          'from every figure here, unevenly, and largest exactly where a migration story looks ' +
-          'first. The toggle was deleted rather than disabled, because a prohibited measure one ' +
-          'boolean away from rendering is not safe to keep.',
+        'An earlier version divided every figure by a metro’s resident population, and this ' +
+          'block used to say the view had been deleted and would not return. It has returned, ' +
+          'and saying otherwise while a working toggle sits above would be the page ' +
+          'contradicting itself rather than qualifying itself.',
+        'apparatus'
+      ),
+      say(
+        'The objection that removed it is unchanged and unanswered. These counts are tax ' +
+          'filers and their dependents, not residents, so non-filers — the very poor, many ' +
+          'elderly people, undocumented residents, some students — are absent from the top of ' +
+          'the fraction and present at the bottom of it. They are absent unevenly, and by most ' +
+          'exactly where a migration story looks first. A ratio of two universes is not a rate ' +
+          'of either one.',
+        'apparatus'
+      ),
+      say(
+        'What changed is where the line sits. The view divides an exchange by the residents of ' +
+          'the OTHER metro and spends the result on how many dots to draw — dividing by the ' +
+          'metro you selected would put one denominator under all twenty-nine and redraw the ' +
+          'first view at another size. No quotient is printed, spoken or carried anywhere on ' +
+          'this page as a figure: it is a scale for a drawing, and the numbers beside the ' +
+          'drawing are the cells the publisher published.',
+        'apparatus'
+      ),
+      say(
+        'The resident estimates are the Census Bureau’s, for the same July the metro set was ' +
+          'drawn from. They come from a different source than everything else here, and they ' +
+          'are the only quantity on this page that is not from the verified package.',
         'apparatus'
       ),
     ],
@@ -403,8 +535,8 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
       say(
         'Population was chosen over migration volume deliberately, so the set is not drawn by ' +
           'the numbers it exists to measure. The IRS did not choose these metros; this project ' +
-          'did, and it is not a license to divide by population, which selects the units and ' +
-          'appears in no figure.',
+          'did. Population selects the units, and in the per-thousand view it also scales the ' +
+          'drawing — in neither job does it appear as a figure.',
         'apparatus'
       ),
       say(UNIVERSE.selection.source + '.', 'apparatus'),

@@ -1,0 +1,583 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>WAM — the motion mark</title>
+<style>
+  :root { --ground:#f7f6f3; --ink:#1c1b19; --mute:#6b6862; --line:#e2ded6; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--ground); color:var(--ink);
+         font:14px/1.5 ui-sans-serif,system-ui,'Segoe UI',sans-serif; }
+  header { display:flex; align-items:baseline; gap:18px; flex-wrap:wrap;
+           padding:14px 22px 10px; border-bottom:1px solid var(--line); }
+  h1 { font-size:13px; letter-spacing:.09em; text-transform:uppercase; margin:0; font-weight:600 }
+  .modes { display:flex; gap:6px; margin-left:auto }
+  button { font:inherit; font-size:12.5px; padding:6px 13px; border:1px solid var(--line);
+           background:#fff; color:var(--mute); border-radius:999px; cursor:pointer;
+           transition:background .18s, color .18s, border-color .18s; }
+  button:hover { border-color:#c9c3b8; color:var(--ink) }
+  button[aria-pressed="true"] { background:var(--ink); border-color:var(--ink); color:#fff }
+  select { font:inherit; font-size:12.5px; padding:5px 9px; border:1px solid var(--line);
+           background:#fff; border-radius:6px; color:var(--ink) }
+  #stage { position:relative; width:100%; margin-top:10px }
+  canvas { display:block; width:100%; height:auto; cursor:pointer }
+  #legend { padding:10px 22px 22px; color:var(--mute); font-size:11.5px;
+            display:flex; gap:26px; flex-wrap:wrap; border-top:1px solid var(--line); margin-top:8px }
+  b { color:var(--ink); font-weight:600 }
+</style>
+
+<header>
+  <h1>Where America Moves — motion study</h1>
+  <select id="pick"><option value="">Choose a metro…</option></select>
+  <div class="modes">
+    <button data-metric="people" aria-pressed="true">Total</button>
+    <button data-metric="percap" aria-pressed="false">Per 1,000</button>
+  </div>
+</header>
+<div id="stage"><canvas id="c"></canvas></div>
+<div id="legend">
+  <span id="key"><b>Green</b> arrived · <b>Orange</b> left</span>
+  <span id="scale">PEOPLE — every dot is the same size, so more dots is more people. Ribbon width is the pair’s net on the cluster’s own scale.</span>
+  <span id="cyc"></span>
+  <span id="absent"></span>
+  <span id="denom" style="flex-basis:100%"></span>
+</div>
+
+<script type="module">
+const D = await (await fetch('14-motion-mark-data.json')).json();
+
+// ── the live mark's own constants (src/lib/clusters.ts) — encoding is NOT being changed ──
+const GAIN = ['#00463c','#00695c','#0b8476','#3aa294','#6dbfb2'];
+const LOSS = ['#7a2408','#a63a12','#c25324','#d9743f','#e89a69'];
+const STOPS = 5;
+const DOT_AREA = 15, DOT_R = 1.6, SOURCE_R = 30, ABSENT_R = 13;
+const NICE = [1,1.5,2,2.5,3,4,5,6,8,10,15,20,25,30,40,50,60,80,100,150,200,250,300,400,500,600,800,1000,1500,2000,2500,3000,4000,5000,6000,8000,10000];
+const TARGET_DOTS = 620;
+const nicePer = (qmax) => NICE.find((v) => v >= qmax / TARGET_DOTS) ?? NICE.at(-1);
+const dotsFor = (v, per) => (v <= 0 ? 0 : Math.max(Math.round(v / per), 1));
+const radiusFor = (n) => Math.sqrt(Math.max(n,1) * (DOT_AREA / Math.PI));
+const PHI = 2.399963229728653;
+function dotAt(i, n, cx, cy, r) {
+  const t = i + 0.5, frac = n > 0 ? Math.sqrt(t / n) : 0, th = t * PHI;
+  return [cx + r * frac * Math.cos(th), cy + r * frac * Math.sin(th), frac];
+}
+const inkFor = (band, frac) => (band === 0 ? GAIN : LOSS)[Math.min(Math.floor(frac * STOPS), STOPS - 1)];
+
+// POPESTIMATE2023, the July-2023 resident estimate — recovered verbatim from commit 57a25a4,
+// the version that shipped the per-capita toggle before it was deleted. Not re-derived.
+const POP = {
+  '35620':19788976,'31080':12881909,'16980':9335921,'19100':8164140,'26420':7587646,
+  '33100':6353900,'12060':6333350,'47900':6328730,'37980':6277370,'38060':5087631,
+  '14460':4970657,'40140':4707448,'41860':4601326,'19820':4356818,'42660':4062857,
+  '33460':3721774,'45300':3370351,'41740':3279736,'19740':3031278,'36740':2863651,
+  '12580':2843966,'16740':2818271,'41180':2804698,'41700':2719892,'38900':2519045,
+  '12420':2498809,'40900':2435884,'38300':2428225,'29820':2351008,'17140':2281096,
+};
+
+/** 1 / 2 / 2.5 / 5 × 10^k — the counting ladder does not reach the size a rate needs. */
+function niceStep(x) {
+  const k = Math.pow(10, Math.floor(Math.log10(x)));
+  const f = x / k;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * k;
+}
+
+const M = D.metros, BY = new Map(M.map((m) => [m.cbsa, m]));
+const rel = (o, d) => D.rel[`${o}>${d}`] ?? null;   // null = undisclosed. NEVER zero.
+
+// ── canvas ──
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+// Trails live on their own layer: it fades toward transparent each frame while the base layer
+// is cleared outright, so the coastline, the clusters and the type never smear.
+const tc = document.createElement('canvas'), tctx = tc.getContext('2d');
+let DPR = 1, SC = 1;
+function size() {
+  const w = document.getElementById('stage').clientWidth;
+  SC = w / D.w;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(w * DPR); cv.height = Math.round(D.h * SC * DPR);
+  cv.style.height = (D.h * SC) + 'px';
+  tc.width = cv.width; tc.height = cv.height;
+}
+new ResizeObserver(() => { if (document.getElementById('stage').clientWidth > 0) size(); }).observe(document.getElementById('stage'));
+size();
+
+// ── layouts ──
+function restingLayout() {
+  const qmax = Math.max(...M.map((m) => D.totals[m.cbsa].in + D.totals[m.cbsa].out));
+  const per = nicePer(qmax);
+  return { per, nodes: M.map((m) => {
+    const t = D.totals[m.cbsa];
+    const n = dotsFor(t.in + t.out, per);
+    return { m, n, r: radiusFor(n), cut: Math.round(n * (t.in / (t.in + t.out))), kind: 'rest' };
+  })};
+}
+function selectionLayout(sel) {
+  const nets = [], miss = [];
+  for (const m of M) {
+    if (m.cbsa === sel) continue;
+    const a = rel(m.cbsa, sel), b = rel(sel, m.cbsa);
+    if (a === null || b === null) { miss.push(m); continue; }
+    nets.push({ m, net: a - b, in: a, out: b });
+  }
+  // PER CAPITA divides the pair's net by the PARTNER metro's residents, per 1,000. Normalising
+  // by the selected metro would put one denominator under all 29 and just redraw Total at a
+  // different scale. The mixed-universe caveat is real and is printed in the legend.
+  for (const x of nets) x.rate = (x.net / POP[x.m.cbsa]) * 1000;
+  const val = (x) => (metric === 'percap' ? Math.abs(x.rate) : Math.abs(x.net));
+  const qmax = Math.max(metric === 'percap' ? 0.01 : 1, ...nets.map(val));
+  // The scale is COARSENED until the whole view fits the render budget, never clipped at draw
+  // time: a cap silently starves whichever routes ask last, which bends the encoding without
+  // saying so. Per-capita spreads the values much flatter than counts do — small metros post
+  // large rates — so it needs the coarser rung far more often than Total does.
+  const next = (p) => (metric === 'percap' ? niceStep(p * 1.5) : (NICE[NICE.indexOf(p) + 1] ?? p * 2));
+  let per = metric === 'percap' ? niceStep(qmax / TARGET_DOTS) : nicePer(qmax);
+  const build = (p) => nets.map((x) => {
+    const n = dotsFor(val(x), p);
+    return { m: x.m, n, r: radiusFor(n), band: x.net > 0 ? 0 : 1, even: x.net === 0,
+             net: x.net, gin: x.in, gout: x.out, rate: x.rate, kind: 'sel' };
+  });
+  let nodes = build(per);
+  for (let i = 0; i < 10 && nodes.reduce((a, n) => a + n.n, 0) > DOT_BUDGET; i++) {
+    per = next(per); nodes = build(per);
+  }
+  return { per, nodes, miss, sel };
+}
+
+// ── routes: one cubic per partner, bowed so in and out never share a path ──
+function routeOf(a, b, dir) {
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+  const bow = Math.min(len * 0.20, 120) * (dir === 'in' ? 1 : -1);
+  const nx = -dy / len * bow, ny = dx / len * bow;
+  return { ax:a.x, ay:a.y, bx:b.x, by:b.y,
+           c1x:a.x + dx*0.28 + nx, c1y:a.y + dy*0.28 + ny,
+           c2x:a.x + dx*0.72 + nx, c2y:a.y + dy*0.72 + ny, len };
+}
+function at(rt, t) {
+  const u = 1 - t, a = u*u*u, b = 3*u*u*t, c = 3*u*t*t, d = t*t*t;
+  return [a*rt.ax + b*rt.c1x + c*rt.c2x + d*rt.bx, a*rt.ay + b*rt.c1y + c*rt.c2y + d*rt.by];
+}
+
+// ── state ──
+let sel = null, layout = restingLayout(), routes = [], travelers = [];
+let cycle = 6, last = performance.now(), hover = null, WIDTH_K = 0.05;
+let metric = 'people', clock = 0;
+const CAP = 2200;
+const MAX_RIBBON = 26;
+const DOT_BUDGET = 4600;   // ≈ CAP / 0.39, the fraction of a cycle's dots in flight at once
+const fmt = (v) => v.toLocaleString('en-US');
+
+function rebuild() {
+  travelers = []; routes = [];
+  layout = sel ? selectionLayout(sel) : restingLayout();
+  placeNames();
+  document.getElementById('absent').textContent =
+    sel && layout.miss.length ? `${layout.miss.length} partner${layout.miss.length>1?'s':''} undisclosed in one direction — drawn as an empty dashed ring, never as zero.` : '';
+  if (!sel) { document.getElementById('cyc').textContent = ''; return; }
+
+  // ONE stream per partner, and its direction IS the sign of the net.
+  //   net > 0  the chosen city gained from that partner  → green, dots travel partner → chosen
+  //   net < 0  the chosen city lost to that partner      → orange, dots travel chosen → partner
+  //   net = 0  a measured tie                            → grey, nothing travels
+  // The stream carries the SAME dot count as the partner's cluster, off the same scale, so the
+  // moving dots and the cluster body are one quantity shown twice.
+  const S = BY.get(sel);
+  let total = 0;
+  for (const nd of layout.nodes) {
+    if (nd.even) continue;
+    const gain = nd.band === 0;
+    total += nd.n;
+    routes.push({ nd, n: nd.n, band: nd.band, acc: 0,
+                  rt: gain ? routeOf(nd.m, S, 'in') : routeOf(S, nd.m, 'in') });
+  }
+  WIDTH_K = MAX_RIBBON / Math.max(1, ...routes.map((r) => r.n));
+  cycle = 8;
+  document.getElementById('cyc').textContent =
+    `Each stream is that pair's net, and its direction is which way the net runs. One cycle (${cycle}s) sends exactly as many dots as the cluster is made of.`;
+}
+
+// Simulation, deliberately separate from drawing: rAF is throttled whenever the tab is not
+// in front, so any check that samples the animation on a wall-clock timer measures the
+// throttle instead of the mark. `__sim` below drives this with a fixed step.
+function advance(dt) {
+  for (const r of routes) {
+    if (!r.n) continue;
+    r.acc += (r.n / cycle) * dt;
+    while (r.acc >= 1 && travelers.length < CAP) {
+      r.acc -= 1;
+      travelers.push({ rt: r.rt, band: r.band, t: 0,
+                       sp: 1 / (cycle * (0.34 + Math.random() * 0.10)) });
+    }
+    if (r.acc > 3) r.acc = 3;
+  }
+  for (let i = travelers.length - 1; i >= 0; i--) {
+    const tr = travelers[i];
+    tr.t += tr.sp * dt;
+    if (tr.t >= 1) travelers.splice(i, 1);
+  }
+}
+
+// ── drawing ──
+function coast() {
+  ctx.strokeStyle = '#ded9d0'; ctx.lineWidth = 1;
+  for (const ring of D.outline) {
+    ctx.beginPath(); ctx.moveTo(ring[0][0], ring[0][1]);
+    for (let i = 1; i < ring.length; i++) ctx.lineTo(ring[i][0], ring[i][1]);
+    ctx.closePath(); ctx.stroke();
+  }
+}
+function cluster(nd, alpha = 1) {
+  ctx.globalAlpha = alpha;
+  const ys = [], pts = [];
+  for (let i = 0; i < nd.n; i++) { const p = dotAt(i, nd.n, nd.m.x, nd.m.y, nd.r); pts.push(p); ys.push(p[1]); }
+  let band;
+  if (nd.kind === 'rest') {
+    const order = pts.map((_, i) => i).sort((a, b) => ys[b] - ys[a]);
+    band = new Uint8Array(nd.n).fill(1);
+    for (let k = 0; k < Math.min(nd.cut, nd.n); k++) band[order[k]] = 0;
+  } else band = new Uint8Array(nd.n).fill(nd.band);
+  const buckets = new Map();
+  for (let i = 0; i < nd.n; i++) {
+    const key = inkFor(band[i], pts[i][2]);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(pts[i]);
+  }
+  for (const [ink, list] of buckets) {
+    ctx.fillStyle = ink; ctx.beginPath();
+    for (const p of list) { ctx.moveTo(p[0] + DOT_R, p[1]); ctx.arc(p[0], p[1], DOT_R, 0, 6.2832); }
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+// ── the names ──────────────────────────────────────────────────────────────────
+//
+// TRUE PROJECTED POSITIONS ARE WHY THIS EXISTS. The clusters are allowed to overlap and are
+// resolved by translucency, but a NAME cannot be translucent — two names on the same pixels
+// are both unreadable. Pinning every label under its cluster (what this file did) puts
+// Philadelphia through New York, Baltimore through Washington, and Riverside through Los
+// Angeles. So a name searches for a slot instead: eight directions at four distances, nearest
+// first, rejecting anything that lands on a cluster or on a name already placed.
+//
+// The order is LARGEST DISC FIRST, not reading order. The big clusters have the least slack
+// (their own body blocks the near rings for everybody), so they claim the canonical slot
+// under themselves and the small crowded ones spend the rings the giants left free.
+//
+// Nothing is dropped. A name that clears no hard slot takes the best soft one — over a
+// cluster but never over another name — and every name carries a ground-coloured halo, so a
+// label sitting on the mark still reads. Dropping three names is not a fix for "you can't
+// even read the metros".
+const LABEL_SIZE = 11.5;
+const LABEL_FONT = `500 ${LABEL_SIZE}px ui-sans-serif,system-ui,sans-serif`;
+// Riverside's disc sits INSIDE Los Angeles's, so its name has to clear a body it is not even
+// attached to: the rings run out past 90 for that reason, and sixteen headings rather than
+// eight because a crowd this tight leaves gaps that are not on the compass points.
+const RINGS = [5, 13, 22, 33, 46, 62, 80, 100];
+const DIRS = [90, 270, 0, 180, 45, 135, 315, 225, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5]
+  .map((deg) => {
+    const a = (deg * Math.PI) / 180, dx = Math.cos(a), dy = Math.sin(a);
+    return [dx, dy, dx > 0.25 ? 'start' : dx < -0.25 ? 'end' : 'middle'];
+  });
+let names = [];
+
+/** Every glyph on the board that a name must not sit on, at the radius it is drawn at. */
+function discList() {
+  const out = layout.nodes.map((nd) => ({
+    m: nd.m, x: nd.m.x, y: nd.m.y, r: nd.even ? 4 : nd.r,
+  }));
+  if (sel) {
+    const S = BY.get(sel);
+    out.push({ m: S, x: S.x, y: S.y, r: SOURCE_R, source: true });
+    for (const m of layout.miss) out.push({ m, x: m.x, y: m.y, r: ABSENT_R });
+  }
+  return out;
+}
+
+function boxFor(d, dx, dy, anchor, dist, w) {
+  const h = LABEL_SIZE;
+  const tx = d.x + dx * (d.r + dist);
+  const ty = d.y + dy * (d.r + dist + h / 2);
+  const x0 = anchor === 'start' ? tx : anchor === 'end' ? tx - w : tx - w / 2;
+  return { tx, ty, anchor, box: [x0 - 2, ty - h / 2 - 1, x0 + w + 2, ty + h / 2 + 1] };
+}
+
+const overlaps = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
+/** `radiusFor` is where the outermost dot's CENTRE lands, so the ink reaches `r + DOT_R`, and a
+    name clearing the layout radius by a pixel still touches the mark. The clearance is the real
+    ink plus two, which is what put five pixels of daylight beside Pittsburgh instead of none. */
+const CLEAR = DOT_R + 2;
+function hitsDisc(box, discs, skip) {
+  for (const c of discs) {
+    if (c.m.cbsa === skip || c.r <= 0) continue;
+    const nx = Math.min(Math.max(c.x, box[0]), box[2]);
+    const ny = Math.min(Math.max(c.y, box[1]), box[3]);
+    if (Math.hypot(c.x - nx, c.y - ny) < c.r + CLEAR) return true;
+  }
+  return false;
+}
+
+function placeNames() {
+  ctx.font = LABEL_FONT;
+  const discs = discList();
+  const taken = [];
+  names = [];
+  for (const d of [...discs].sort((a, b) => b.r - a.r)) {
+    // The chosen metro's own name is set inside its ring, so it needs no slot out here.
+    if (d.source) continue;
+    const w = ctx.measureText(d.m.short).width;
+    let hard = null, soft = null;
+    for (const dist of RINGS) {
+      for (const [dx, dy, anchor] of DIRS) {
+        const c = boxFor(d, dx, dy, anchor, dist, w);
+        if (c.box[0] < 3 || c.box[2] > D.w - 3 || c.box[1] < 3 || c.box[3] > D.h - 3) continue;
+        if (taken.some((t) => overlaps(c.box, t))) continue;
+        if (hitsDisc(c.box, discs, d.m.cbsa)) { soft ??= { ...c, dist }; continue; }
+        hard = { ...c, dist };
+        break;
+      }
+      if (hard) break;
+    }
+    const p = hard ?? soft ?? { ...boxFor(d, 0, 1, 'middle', RINGS[0], w), dist: RINGS[0] };
+    taken.push(p.box);
+    // A LEADER IS OWED WHEREVER THE RIM STOPS BEING AN ANSWER. Clearing the collision is only
+    // half of it: Riverside's disc sits inside Los Angeles's and Baltimore's inside
+    // Washington's, so those three read as one body and a name touching its edge names the
+    // body, not the metro. Where two discs overlap, the leader runs to the metro's own
+    // projected point and ends in a pip on it — which says which centre without moving a
+    // cluster, and the clusters were ruled to stay exactly where the projection puts them.
+    const crowded = discs.some(
+      (c) => c.m.cbsa !== d.m.cbsa && c.r > 0 && Math.hypot(c.x - d.x, c.y - d.y) < c.r + d.r
+    );
+    names.push({ d, ...p, lead: crowded || p.dist > RINGS[0] });
+  }
+}
+
+function drawNames() {
+  ctx.font = LABEL_FONT;
+  ctx.textBaseline = 'middle';
+  for (const p of names) {
+    if (!p.lead) continue;
+    const nx = Math.min(Math.max(p.d.x, p.box[0]), p.box[2]);
+    const ny = Math.min(Math.max(p.d.y, p.box[1]), p.box[3]);
+    // Haloed, because the line crosses the mark it is pointing into and a bare hairline over
+    // a stipple disappears into it.
+    ctx.beginPath(); ctx.moveTo(p.d.x, p.d.y); ctx.lineTo(nx, ny);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(247,246,243,.85)'; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.strokeStyle = 'rgba(90,86,80,.62)'; ctx.lineWidth = 0.8; ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.d.x, p.d.y, 2.6, 0, 6.2832);
+    ctx.fillStyle = 'rgba(247,246,243,.9)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.d.x, p.d.y, 1.5, 0, 6.2832);
+    ctx.fillStyle = '#3a3a38'; ctx.fill();
+  }
+  for (const p of names) {
+    ctx.textAlign = p.anchor;
+    ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(247,246,243,.92)';
+    ctx.strokeText(p.d.m.short, p.tx, p.ty);
+    ctx.fillStyle = '#3a3a38';
+    ctx.fillText(p.d.m.short, p.tx, p.ty);
+  }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+function sourceRing() {
+  const S = BY.get(sel);
+  ctx.strokeStyle = '#1c1b19'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.arc(S.x, S.y, SOURCE_R, 0, 6.2832); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fill();
+  ctx.fillStyle = '#1c1b19'; ctx.font = '600 10.5px ui-sans-serif,system-ui,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(S.short, S.x, S.y);
+}
+// The two PUBLISHED cells, side by side, and nothing else. The net itself stays a mark: the
+// contract licenses aggregating cells into a drawing but not into a printed figure or a
+// sentence, so the reader is handed both directions and does the comparison themselves.
+function readout() {
+  const nd = layout.nodes.find((n) => n.m.cbsa === hover);
+  if (!nd) return;
+  const S = BY.get(sel);
+  // Each direction over the population of WHERE THE MOVERS LEFT — ticket 09's own rule, applied
+  // to two published cells. The net is still never printed, in either metric.
+  const rows = [
+    [`${nd.m.short} → ${S.short}`, nd.gin, (nd.gin / POP[nd.m.cbsa]) * 1000],
+    [`${S.short} → ${nd.m.short}`, nd.gout, (nd.gout / POP[sel]) * 1000],
+  ];
+  const rate = metric === 'percap';
+  ctx.font = '500 11.5px ui-sans-serif,system-ui,sans-serif';
+  const wName = Math.max(...rows.map((r) => ctx.measureText(r[0]).width));
+  const wNum = Math.max(...rows.map((r) => ctx.measureText(fmt(r[1])).width));
+  const wRate = rate ? Math.max(...rows.map((r) => ctx.measureText(r[2].toFixed(2)).width)) + 16 : 0;
+  const w = wName + wNum + wRate + 34, h = rate ? 64 : 50;
+  let x = nd.m.x + (nd.r || 10) + 10, y = nd.m.y - h / 2;
+  if (x + w > D.w - 6) x = nd.m.x - (nd.r || 10) - 10 - w;
+  y = Math.max(6, Math.min(y, D.h - h - 6));
+
+  ctx.fillStyle = 'rgba(255,255,255,.96)'; ctx.strokeStyle = '#d8d3ca'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 7); ctx.fill(); ctx.stroke();
+
+  ctx.textBaseline = 'middle';
+  rows.forEach((r, i) => {
+    const ry = y + 16 + i * 19;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#55524c';
+    ctx.fillText(r[0], x + 12, ry);
+    const wins = i === 0 ? nd.gin > nd.gout : nd.gout > nd.gin;
+    ctx.fillStyle = wins ? (i === 0 ? '#00695c' : '#a63a12') : '#8a867e';
+    ctx.font = '600 11.5px ui-sans-serif,system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmt(r[1]), x + w - 12 - wRate, ry);
+    if (rate) { ctx.fillStyle = '#8a867e'; ctx.fillText(r[2].toFixed(2), x + w - 12, ry); }
+    ctx.font = '500 11.5px ui-sans-serif,system-ui,sans-serif';
+  });
+  if (rate) {
+    ctx.textAlign = 'right'; ctx.fillStyle = '#a8a49c';
+    ctx.font = '500 9.5px ui-sans-serif,system-ui,sans-serif';
+    ctx.fillText('per 1,000 residents of the origin', x + w - 12, y + h - 12);
+  }
+  ctx.textAlign = 'left';
+}
+
+function absentRings() {
+  ctx.setLineDash([3,3]); ctx.strokeStyle = '#b4afa6'; ctx.lineWidth = 1;
+  for (const m of layout.miss) { ctx.beginPath(); ctx.arc(m.x, m.y, ABSENT_R, 0, 6.2832); ctx.stroke(); }
+  ctx.setLineDash([]);
+}
+
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now; clock += dt;
+  ctx.setTransform(DPR * SC, 0, 0, DPR * SC, 0, 0);
+
+  ctx.fillStyle = '#f7f6f3'; ctx.fillRect(0, 0, D.w, D.h);
+  coast();
+
+  // fade the trail layer toward transparent rather than painting the ground over it
+  tctx.setTransform(DPR * SC, 0, 0, DPR * SC, 0, 0);
+  if (sel) {
+    tctx.globalCompositeOperation = 'destination-out';
+    tctx.fillStyle = 'rgba(0,0,0,.13)';
+    tctx.fillRect(0, 0, D.w, D.h);
+    tctx.globalCompositeOperation = 'source-over';
+  } else {
+    tctx.clearRect(0, 0, D.w, D.h);
+  }
+
+  if (!sel) {
+    for (const nd of layout.nodes) cluster(nd);
+    drawNames();
+  } else {
+    for (const nd of layout.nodes) {
+      if (nd.even) { ctx.fillStyle = '#5c6068'; ctx.beginPath(); ctx.arc(nd.m.x, nd.m.y, 3.4, 0, 6.2832); ctx.fill(); }
+      else cluster(nd, .95);
+    }
+
+    // THE RIBBON CARRIES THE QUANTITY. Width is the pair's net off the cluster's own scale, so
+    // two streams are compared by looking at them. The 1px floor is the same bargain the mark
+    // already discloses for a value too small to fill one dot — it is a floor, never added on
+    // top of the others, so it lifts only the cells that would otherwise vanish.
+    for (const r of routes) {
+      if (!r.n) continue;
+      const hot = hover && hover === r.nd.m.cbsa;
+      ctx.globalAlpha = hot ? .58 : .30;
+      ctx.strokeStyle = r.band === 0 ? '#0b8476' : '#c25324';
+      ctx.lineWidth = Math.max(1, r.n * WIDTH_K);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(r.rt.ax, r.rt.ay);
+      ctx.bezierCurveTo(r.rt.c1x, r.rt.c1y, r.rt.c2x, r.rt.c2y, r.rt.bx, r.rt.by);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    advance(dt);
+    for (let i = travelers.length - 1; i >= 0; i--) {
+      const tr = travelers[i];
+      const [x, y] = at(tr.rt, tr.t);
+      const fade = Math.sin(Math.PI * Math.min(1, tr.t * 3)) * 0.35 + 0.65;
+      tctx.globalAlpha = Math.min(1, fade);
+      tctx.fillStyle = tr.band === 0 ? '#00695c' : '#c25324';
+      tctx.beginPath(); tctx.arc(x, y, DOT_R + 0.35, 0, 6.2832); tctx.fill();
+      tctx.globalAlpha = 0.16;
+      tctx.beginPath(); tctx.arc(x, y, DOT_R + 2.6, 0, 6.2832); tctx.fill();
+      tctx.globalAlpha = 1;
+    }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(tc, 0, 0); ctx.restore();
+
+    absentRings(); sourceRing(); drawNames();
+    if (hover) readout();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// Label placement is checked, not eyeballed: every view is asked whether any two names
+// overlap and which names had to be set over a cluster.
+window.__labels = () => {
+  const discs = discList();
+  const clash = [];
+  for (let i = 0; i < names.length; i++)
+    for (let j = i + 1; j < names.length; j++)
+      if (overlaps(names[i].box, names[j].box)) clash.push([names[i].d.m.short, names[j].d.m.short]);
+  return {
+    n: names.length,
+    nameOnName: clash,
+    onCluster: names.filter((p) => hitsDisc(p.box, discs, p.d.m.cbsa)).map((p) => p.d.m.short),
+    displaced: names.filter((p) => p.lead).map((p) => [p.d.m.short, p.dist]),
+  };
+};
+window.__boxes = () => ({
+  discs: discList().map((d) => [d.m.short, d.x, d.y, Number(d.r.toFixed(1))]),
+  names: names.map((p) => [p.d.m.short, p.box.map((v) => Number(v.toFixed(1)))]),
+});
+window.__pick = (name) => {
+  const m = M.find((x) => x.short === name);
+  sel = m ? m.cbsa : null; document.getElementById('pick').value = sel ?? ''; rebuild();
+  return window.__labels();
+};
+window.__hoverAt = (name) => { const m = M.find((x) => x.short === name); hover = m ? m.cbsa : null; return hover; };
+window.__sim = (secs) => { for (let i = 0; i < Math.round(secs * 60); i++) advance(1 / 60); return window.__dbg(); };
+window.__dbg = () => ({
+  inFlight: travelers.length, cap: CAP, routes: routes.length,
+  dotsPerCycle: routes.reduce((a, r) => a + r.n, 0),
+  quartiles: [0, .25, .5, .75].map((lo) => travelers.filter((t) => t.t >= lo && t.t < lo + .25).length),
+  starved: routes.filter((r) => r.acc >= 3).length,
+});
+
+// ── input ──
+const pick = document.getElementById('pick');
+for (const m of [...M].sort((a,b) => a.short.localeCompare(b.short)))
+  pick.append(Object.assign(document.createElement('option'), { value: m.cbsa, textContent: m.short }));
+pick.onchange = () => { sel = pick.value || null; rebuild(); };
+
+const hit = (e) => {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) / SC, y = (e.clientY - r.top) / SC;
+  let best = null, bd = 1e9;
+  for (const m of M) { const d = Math.hypot(m.x - x, m.y - y); if (d < bd) { bd = d; best = m; } }
+  return { best, bd };
+};
+cv.onpointermove = (e) => {
+  if (!sel) { hover = null; return; }
+  const { best, bd } = hit(e);
+  hover = bd < 44 && best.cbsa !== sel ? best.cbsa : null;
+};
+cv.onpointerleave = () => { hover = null; };
+
+cv.onclick = (e) => {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) / SC, y = (e.clientY - r.top) / SC;
+  let best = null, bd = 1e9;
+  for (const m of M) { const d = Math.hypot(m.x - x, m.y - y); if (d < bd) { bd = d; best = m; } }
+  if (bd > 46) { sel = null; pick.value = ''; } else { sel = best.cbsa; pick.value = best.cbsa; }
+  rebuild();
+};
+
+for (const b of document.querySelectorAll('[data-metric]')) b.onclick = () => {
+  metric = b.dataset.metric;
+  for (const o of document.querySelectorAll('[data-metric]')) o.setAttribute('aria-pressed', String(o === b));
+  document.getElementById('key').innerHTML = '<b>Green</b> net came in · <b>Orange</b> net went out';
+  document.getElementById('scale').textContent = metric === 'percap'
+    ? 'PER 1,000 — the net divided by the OTHER metro’s residents. Every dot is the same size, and here a dot is a fixed rate rather than a fixed number of people.'
+    : 'TOTAL — every dot is the same size, so more dots is more people.';
+  document.getElementById('denom').textContent = metric === 'percap'
+    ? 'The numerator counts tax filers and their dependents; the denominator is every resident. The two are different universes and the ratio does not mean one in a thousand residents moved.'
+    : '';
+  rebuild();
+};
+
+rebuild();
+</script>

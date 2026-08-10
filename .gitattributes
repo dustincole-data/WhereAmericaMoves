@@ -1,0 +1,11 @@
+# The verified package is HASHED BYTES, not source. `package.ts` gate ⑨ compares
+# `rigor/package/manifest.json`'s own bytes against `brief.manifest_sha256`, and gate ⑧ does
+# the same for every vendored frame and figure — so a checkout that rewrites LF to CRLF
+# changes the digest of a file nobody edited and the integrity gate fires before the page
+# renders. That is what blocked `npm run build` on Windows while Vercel's Linux builder was
+# unaffected: the bytes only differed on the machine whose checkout converted them.
+#
+# `-text` means git never converts either way, on any platform. The package stays the bytes
+# that were hashed. It is NOT a licence to edit a packaged file — the fix is always the
+# checkout.
+rigor/** -text

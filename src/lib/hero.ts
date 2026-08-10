@@ -33,13 +33,16 @@ import {
   WIDE,
   bandOf,
   bucketOf,
+  cubicAt,
   cutBands,
   dotAt,
   hexToRgb,
   quadPoint,
   radiusFor,
+  routeOf,
   threadControl,
   type Mode,
+  type Route,
 } from './clusters';
 
 interface ViewData {
@@ -51,8 +54,13 @@ interface ViewData {
 interface Payload {
   codes: string[];
   views: Record<string, ViewData>;
-  wpos: Record<string, number[]>;
+  /** one per metro, the same selections drawn on the per-1,000 rate; absent on the share
+      pages, which carry no toggle */
+  rates?: Record<string, ViewData>;
+  /** ONE array — the clusters never move */
+  wpos: number[];
   ppos: number[];
+  outline: number[][][];
   hues: Record<string, string>;
   /** the thirty share pages open pre-selected and without controls */
   focus: string | null;
@@ -96,13 +104,20 @@ if (stage && canvas && over && payloadEl) {
 
   const cache = new Map<string, Cluster[]>();
 
+  /** The metric is a choice between two pre-built sets of counts, not a computation: the
+      rate view is derived at build from the same package cells and arrives as dots, so the
+      client never divides anything by a population and no rate is ever a number here. */
+  let metric: 'people' | 'rate' = 'people';
+  const viewOf = (key: string): ViewData =>
+    (metric === 'rate' && key !== 'rest' ? D.rates?.[key] : undefined) ?? D.views[key];
+
   function frame(key: string, m: Mode): Cluster[] {
-    const ck = `${key}|${m.w}`;
+    const ck = `${key}|${m.w}|${key === 'rest' ? 'p' : metric}`;
     const hit = cache.get(ck);
     if (hit) return hit;
 
-    const v = D.views[key];
-    const pos = m === PHONE ? D.ppos : D.wpos[key];
+    const v = viewOf(key);
+    const pos = m === PHONE ? D.ppos : D.wpos;
     const out: Cluster[] = D.codes.map((code, i) => {
       const x = pos[i * 2];
       const y = pos[i * 2 + 1];
@@ -249,6 +264,8 @@ if (stage && canvas && over && payloadEl) {
     canvas!.height = Math.round(box.height * dpr);
     canvas!.style.width = `${box.width}px`;
     canvas!.style.height = `${box.height}px`;
+    trail.width = canvas!.width;
+    trail.height = canvas!.height;
     // THE OVERLAY'S BOX IS THE CANVAS'S BOX. It has to be set here rather than in the
     // stylesheet, because the two modes draw into different boxes and a viewBox is not a
     // CSS property — leaving it at the wide box on a phone renders the whole overlay at a
@@ -269,12 +286,16 @@ if (stage && canvas && over && payloadEl) {
 
   function glyphs(f: Cluster[], key: string, m: Mode, alpha: number, t: number) {
     if (alpha <= 0.01) return;
-    const v = D.views[key];
+    const v = viewOf(key);
     const sel = key === 'rest' ? null : key;
     const si = sel ? D.codes.indexOf(sel) : -1;
 
-    // The threads, under everything, growing out of the source as the clusters land.
-    if (si >= 0) {
+    // The threads, under everything, growing out of the source as the clusters land. THE
+    // PHONE'S ONLY, now: on a wide screen the thread was replaced by the stream, which says
+    // the same thing and carries the quantity in its width as well as its direction. The
+    // phone draws thirty cells on a grid, where a stream would be a route between two
+    // squares of a table and mean nothing, so the grid keeps the thread it was ruled with.
+    if (si >= 0 && m === PHONE) {
       const s = f[si];
       const nmax = Math.max(...v.n, 1);
       const p = Math.max(0, Math.min(1, (t - 0.2) / 0.8));
@@ -368,12 +389,165 @@ if (stage && canvas && over && payloadEl) {
     }
   }
 
+  // ── the coastline ────────────────────────────────────────────────────────────
+  // Apparatus, one hairline, quieter than the lightest dot in either ramp. It exists so a
+  // cluster's position reads as a place rather than as a diagram of one — the clusters now
+  // sit at their true projected points, and without a coast a true point looks arbitrary.
+
+  function coast(m: Mode) {
+    if (m === PHONE || !D.outline?.length) return;
+    ctx.strokeStyle = '#ded9d0';
+    ctx.lineWidth = 1;
+    for (const ring of D.outline) {
+      ctx.beginPath();
+      ctx.moveTo(ring[0][0], ring[0][1]);
+      for (let i = 1; i < ring.length; i++) ctx.lineTo(ring[i][0], ring[i][1]);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  // ── the streams ──────────────────────────────────────────────────────────────
+  //
+  // One per partner, and ITS DIRECTION IS THE SIGN OF THE NET: green and inbound where the
+  // chosen metro gained from that partner, orange and outbound where it lost, and nothing at
+  // all for a measured tie. The ribbon's width is that same net off the cluster's own scale,
+  // so two streams are compared by looking at them — which is the long-unmet requirement
+  // that the volume live in the mark rather than in a table beside it.
+  //
+  // The dots in flight are the cluster's own dots: one cycle sends exactly as many as the
+  // cluster is made of, so the moving stream and the still body are one quantity twice.
+  //
+  // Trails live on their OWN layer, faded with `destination-out` each frame. Washing the
+  // ground colour over everything instead ghosts the coastline and every static glyph, which
+  // is the defect that made the first pass look like it was drawn on greaseproof paper.
+
+  interface Stream {
+    ci: number;
+    n: number;
+    band: 0 | 1;
+    acc: number;
+    rt: Route;
+  }
+
+  const CYCLE = 8;
+  const CAP = 2200;
+  const MAX_RIBBON = 26;
+
+  const trail = document.createElement('canvas');
+  const tctx = trail.getContext('2d')!;
+  let streams: Stream[] = [];
+  let travelers: { rt: Route; band: 0 | 1; t: number; sp: number }[] = [];
+  let widthK = 0.05;
+  let lastFrame = 0;
+  let hover: string | null = null;
+
+  function buildStreams(f: Cluster[], m: Mode) {
+    streams = [];
+    travelers = [];
+    if (m !== WIDE || cur === 'rest') return;
+    const v = viewOf(cur);
+    const si = D.codes.indexOf(cur);
+    if (si < 0) return;
+    for (let i = 0; i < f.length; i++) {
+      if (i === si || v.pole[i] === 2 || v.n[i] <= 0) continue;
+      const gain = v.pole[i] === 1;
+      const a = gain ? f[i] : f[si];
+      const b = gain ? f[si] : f[i];
+      streams.push({ ci: i, n: v.n[i], band: gain ? 0 : 1, acc: 0, rt: routeOf(a.x, a.y, b.x, b.y) });
+    }
+    widthK = MAX_RIBBON / Math.max(1, ...streams.map((s) => s.n));
+  }
+
+  /** Deliberately separate from drawing. rAF is throttled whenever the tab is not in front,
+      so anything that samples this on a wall clock measures the throttle instead of the
+      mark; `__sim` below drives the same function with a fixed step. */
+  function advance(dt: number) {
+    for (const s of streams) {
+      s.acc += (s.n / CYCLE) * dt;
+      while (s.acc >= 1 && travelers.length < CAP) {
+        s.acc -= 1;
+        travelers.push({ rt: s.rt, band: s.band, t: 0, sp: 1 / (CYCLE * (0.34 + Math.random() * 0.1)) });
+      }
+      if (s.acc > 3) s.acc = 3;
+    }
+    for (let i = travelers.length - 1; i >= 0; i--) {
+      const tr = travelers[i];
+      tr.t += tr.sp * dt;
+      if (tr.t >= 1) travelers.splice(i, 1);
+    }
+  }
+
+  function ribbons() {
+    ctx.lineCap = 'round';
+    for (const s of streams) {
+      const hot = hover === D.codes[s.ci];
+      ctx.globalAlpha = hot ? 0.58 : 0.3;
+      ctx.strokeStyle = s.band === 0 ? '#0b8476' : '#c25324';
+      // The 1px floor is the same bargain the dot already discloses for a value too small to
+      // fill one of itself. It is a floor and never an addition, so it lifts only the pairs
+      // that would otherwise vanish and leaves every comparison above it untouched.
+      ctx.lineWidth = Math.max(1, s.n * widthK);
+      ctx.beginPath();
+      ctx.moveTo(s.rt.ax, s.rt.ay);
+      ctx.bezierCurveTo(s.rt.c1x, s.rt.c1y, s.rt.c2x, s.rt.c2y, s.rt.bx, s.rt.by);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function flight(dt: number, dpr: number) {
+    // The fade is applied in DEVICE pixels over the whole layer, then the transform goes
+    // back on to draw: fading inside the user-space transform leaves the letterboxed
+    // margins untouched, and a trail that strays into them never clears.
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
+    tctx.globalCompositeOperation = 'destination-out';
+    tctx.fillStyle = 'rgba(0,0,0,.13)';
+    tctx.fillRect(0, 0, trail.width, trail.height);
+    tctx.globalCompositeOperation = 'source-over';
+    tctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
+
+    advance(dt);
+    const dr = WIDE.dotR;
+    for (const tr of travelers) {
+      const [x, y] = cubicAt(tr.rt, tr.t);
+      const fade = Math.sin(Math.PI * Math.min(1, tr.t * 3)) * 0.35 + 0.65;
+      tctx.fillStyle = tr.band === 0 ? '#00695c' : '#c25324';
+      tctx.globalAlpha = Math.min(1, fade);
+      tctx.beginPath();
+      tctx.arc(x, y, dr + 0.35, 0, Math.PI * 2);
+      tctx.fill();
+      tctx.globalAlpha = 0.16;
+      tctx.beginPath();
+      tctx.arc(x, y, dr + 2.6, 0, Math.PI * 2);
+      tctx.fill();
+    }
+    tctx.globalAlpha = 1;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(trail, 0, 0);
+    ctx.restore();
+  }
+
+  const flying = () => streams.length > 0 && !REDUCED.matches;
+  let raf = 0;
+  function kick() {
+    if (!raf) raf = requestAnimationFrame(paint);
+  }
+
   function paint(now: number) {
+    raf = 0;
     const m = mode();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dt = Math.min((now - lastFrame) / 1000, 0.05);
+    lastFrame = now;
+
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas!.width, canvas!.height);
     ctx.restore();
+    coast(m);
 
     let global = 1;
     if (running) {
@@ -404,7 +578,21 @@ if (stage && canvas && over && payloadEl) {
       ctx.fill();
     }
 
-    if (running) requestAnimationFrame(paint);
+    // The streams ride over the still bodies, at a third strength: the cluster is the
+    // quantity at rest and the ribbon is the same quantity moving, so the ribbon must not
+    // out-shout the thing it repeats.
+    if (streams.length) {
+      ribbons();
+      if (REDUCED.matches) {
+        // A reader who asked for no motion still gets the encoding: the ribbon carries the
+        // width and the direction, and only the dots in flight are withheld.
+        tctx.clearRect(0, 0, trail.width, trail.height);
+      } else {
+        flight(dt, dpr);
+      }
+    }
+
+    if (running || flying()) kick();
   }
 
   let prevKey = cur;
@@ -417,18 +605,20 @@ if (stage && canvas && over && payloadEl) {
     groups = buildGroups(from, to, m);
     const anchor = D.codes.indexOf(cur === 'rest' ? prevKey : cur);
     delay = buildDelay(anchor >= 0 ? anchor : 0, to);
+    buildStreams(to, m);
     if (!animate || REDUCED.matches) {
       from = to;
       groups = buildGroups(to, to, m);
       delay = delay.map(() => 0);
       running = false;
       t0 = performance.now() - (DUR + WAVE);
-      paint(performance.now());
+      lastFrame = performance.now();
     } else {
       t0 = performance.now();
+      lastFrame = performance.now();
       running = true;
-      requestAnimationFrame(paint);
     }
+    kick();
     placeLabels(m);
   }
 
@@ -436,15 +626,43 @@ if (stage && canvas && over && payloadEl) {
   //
   // Placed in the browser against measured text, not against an approximation. 09 round 3
   // recorded why: a plate that sizes a container from a per-character font metric cannot
-  // certify the page's fit, and only the browser can close it. Four slots are tried; a name
-  // that clears none of them still ships — it takes a ground-coloured halo and sits over the
-  // mark, because "you can't even read the metros" is the objection this whole form exists
-  // to answer and dropping three names is not an answer to it.
+  // certify the page's fit, and only the browser can close it.
+  //
+  // WHAT 14 CHANGED, AND WHY IT HAD TO. The clusters used to be relaxed apart until no two
+  // discs touched, so five slots and a halo were enough. They now sit at TRUE projected
+  // points, where Riverside's disc is inside Los Angeles's and Baltimore's inside
+  // Washington's, and a name pinned under its own cluster lands on somebody else's — the
+  // exact pile-up this pass exists to clear. So the search widened to sixteen headings at
+  // eight distances, out past ninety units, which is what it takes for Riverside's name to
+  // escape a body it is not even attached to.
+  //
+  // AND CLEARING THE COLLISION IS ONLY HALF OF IT. Where two discs overlap, a name touching
+  // the rim of the mass names the mass, not the metro — so those get a LEADER to the metro's
+  // own projected point, ending in a pip on it. That says which centre without moving a
+  // cluster, and the clusters were ruled to stay exactly where the projection puts them.
+  //
+  // The order is largest disc first, not reading order: a big cluster's own body blocks the
+  // near rings for everybody, so it claims the canonical slot under itself and the small
+  // crowded ones spend the rings it left free.
 
   const labels = [...over!.querySelectorAll<SVGTextElement>('text[data-label]')];
   const hits = [...over!.querySelectorAll<SVGGElement>('g[data-metro]')];
   const keys = [...over!.querySelectorAll<SVGGElement>('g[data-metro-key]')];
+  const leads = [...over!.querySelectorAll<SVGGElement>('g[data-leader]')];
   const meas = document.createElement('canvas').getContext('2d')!;
+
+  const RINGS = [5, 13, 22, 33, 46, 62, 80, 100];
+  const HEADINGS = [90, 270, 0, 180, 45, 135, 315, 225, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5].map(
+    (deg) => {
+      const a = (deg * Math.PI) / 180;
+      const dx = Math.cos(a);
+      const dy = Math.sin(a);
+      return { dx, dy, anchor: dx > 0.25 ? 'start' : dx < -0.25 ? 'end' : 'middle' };
+    }
+  );
+
+  type Box = [number, number, number, number];
+  const overlaps = (a: Box, b: Box) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
 
   function placeLabels(m: Mode) {
     const cs = getComputedStyle(over!);
@@ -452,9 +670,8 @@ if (stage && canvas && over && payloadEl) {
     meas.font = `500 ${fs}px ${cs.fontFamily}`;
     /** a control has to clear 24×24 of REAL pixels, so the floor is converted back to units */
     const hitFloor = 13 / (scale || 1);
-    const boxes: [number, number, number, number][] = [];
+    const v = viewOf(cur);
     const discs = to.map((c, i) => {
-      const v = D.views[cur];
       const r =
         D.codes[i] === cur
           ? m.sourceR
@@ -463,58 +680,91 @@ if (stage && canvas && over && payloadEl) {
             : v.n[i] <= 0
               ? m.evenR
               : Math.max(c.r, 3);
-      return { x: c.x, y: c.y, r };
+      return { x: c.x, y: c.y, r, i };
     });
+    /** `radiusFor` is where the outermost dot's CENTRE lands, so the ink reaches `r + dotR`.
+        Clearing the layout radius by a pixel still touches the mark; the clearance is the
+        real ink plus two. */
+    const clear = m.dotR + 2;
+    const hitsDisc = (box: Box, skip: number) => {
+      for (const c of discs) {
+        if (c.i === skip || c.r <= 0) continue;
+        const nx = Math.min(Math.max(c.x, box[0]), box[2]);
+        const ny = Math.min(Math.max(c.y, box[1]), box[3]);
+        if (Math.hypot(c.x - nx, c.y - ny) < c.r + clear) return true;
+      }
+      return false;
+    };
 
-    labels.forEach((node, i) => {
-      const d = discs[i];
-      const w = meas.measureText(node.textContent || '').width;
+    const taken: Box[] = [];
+    const placedAt = new Array<{ tx: number; ty: number; anchor: string; box: Box; lead: boolean }>(discs.length);
+    for (const d of [...discs].sort((a, b) => b.r - a.r)) {
+      const node = labels[d.i];
+      const w = meas.measureText(node?.textContent || '').width;
       const h = fs;
-      const slots: [number, number, string][] = [
-        [d.x, d.y + d.r + h + 2, 'middle'],
-        [d.x, d.y - d.r - 5, 'middle'],
-        [d.x + d.r + 6, d.y + h * 0.34, 'start'],
-        [d.x - d.r - 6, d.y + h * 0.34, 'end'],
-        [d.x, d.y + d.r + h * 2.2, 'middle'],
-      ];
-      let best: [number, number, string, [number, number, number, number]] | null = null;
-      for (const [tx, ty, anchor] of slots) {
+      // The box is measured on a CANVAS and the name is drawn as SVG, so it is deliberately
+      // generous: `h` is the font size and the real glyph box runs ascender to descender,
+      // about a quarter taller. Pittsburgh and Baltimore in the Orlando view overlapped by
+      // three pixels on the exact box and clear on this one.
+      const at = (dx: number, dy: number, anchor: string, dist: number) => {
+        const tx = d.x + dx * (d.r + dist);
+        const ty = d.y + dy * (d.r + dist + h / 2);
         const x0 = anchor === 'start' ? tx : anchor === 'end' ? tx - w : tx - w / 2;
-        const box: [number, number, number, number] = [x0 - 2, ty - h, x0 + w + 2, ty + 3];
-        if (box[0] < 2 || box[2] > m.w - 2 || box[3] > m.h - 2 || box[1] < 2) continue;
-        let clash = false;
-        for (const c of discs) {
-          const nx = Math.min(Math.max(c.x, box[0]), box[2]);
-          const ny = Math.min(Math.max(c.y, box[1]), box[3]);
-          if (Math.hypot(c.x - nx, c.y - ny) < c.r - 1) {
-            clash = true;
-            break;
+        return { tx, ty, anchor, box: [x0 - 3, ty - h * 0.66, x0 + w + 3, ty + h * 0.66] as Box };
+      };
+      let hard: (ReturnType<typeof at> & { dist: number }) | null = null;
+      let soft: (ReturnType<typeof at> & { dist: number }) | null = null;
+      for (const dist of RINGS) {
+        for (const { dx, dy, anchor } of HEADINGS) {
+          const c = at(dx, dy, anchor, dist);
+          if (c.box[0] < 3 || c.box[2] > m.w - 3 || c.box[1] < 3 || c.box[3] > m.h - 3) continue;
+          if (taken.some((t) => overlaps(c.box, t))) continue;
+          if (hitsDisc(c.box, d.i)) {
+            // Never over another NAME, and only over the mark as a last resort — the halo is
+            // what keeps that case readable. Dropping three names is not an answer to "you
+            // can't even read the metros", which is the objection this form exists to answer.
+            soft ??= { ...c, dist };
+            continue;
           }
-        }
-        if (!clash) {
-          for (const p of boxes) {
-            if (!(box[2] < p[0] || box[0] > p[2] || box[3] < p[1] || box[1] > p[3])) {
-              clash = true;
-              break;
-            }
-          }
-        }
-        if (!clash) {
-          best = [tx, ty, anchor, box];
+          hard = { ...c, dist };
           break;
         }
+        if (hard) break;
       }
-      const [tx, ty, anchor, box] = best ?? [
-        d.x,
-        d.y + d.r + h + 2,
-        'middle',
-        [d.x - w / 2 - 2, d.y + d.r + 2, d.x + w / 2 + 2, d.y + d.r + h + 5] as [number, number, number, number],
-      ];
-      boxes.push(box);
-      node.setAttribute('text-anchor', anchor);
-      node.setAttribute('transform', `translate(${tx.toFixed(1)},${ty.toFixed(1)})`);
+      const p = hard ?? soft ?? { ...at(0, 1, 'middle', RINGS[0]), dist: RINGS[0] };
+      taken.push(p.box);
+      const crowded = discs.some(
+        (c) => c.i !== d.i && c.r > 0 && Math.hypot(c.x - d.x, c.y - d.y) < c.r + d.r
+      );
+      placedAt[d.i] = { tx: p.tx, ty: p.ty, anchor: p.anchor, box: p.box, lead: crowded || p.dist > RINGS[0] };
+    }
+
+    labels.forEach((node, i) => {
+      const p = placedAt[i];
+      node.setAttribute('text-anchor', p.anchor);
+      node.setAttribute('transform', `translate(${p.tx.toFixed(1)},${p.ty.toFixed(1)})`);
+      node.setAttribute('dominant-baseline', 'middle');
       node.classList.toggle('strong', D.codes[i] === cur);
       node.classList.toggle('quiet', cur !== 'rest' && D.codes[i] !== cur);
+    });
+
+    leads.forEach((g, i) => {
+      const p = placedAt[i];
+      const d = discs[i];
+      g.toggleAttribute('hidden', !p.lead);
+      if (!p.lead) return;
+      const nx = Math.min(Math.max(d.x, p.box[0]), p.box[2]);
+      const ny = Math.min(Math.max(d.y, p.box[1]), p.box[3]);
+      for (const line of g.querySelectorAll('line')) {
+        line.setAttribute('x1', d.x.toFixed(1));
+        line.setAttribute('y1', d.y.toFixed(1));
+        line.setAttribute('x2', nx.toFixed(1));
+        line.setAttribute('y2', ny.toFixed(1));
+      }
+      for (const dot of g.querySelectorAll('circle')) {
+        dot.setAttribute('cx', d.x.toFixed(1));
+        dot.setAttribute('cy', d.y.toFixed(1));
+      }
     });
 
     hits.forEach((g, i) => {
@@ -532,10 +782,10 @@ if (stage && canvas && over && payloadEl) {
 
     // The key sits in the box's own corner, in the same user units as the names, so
     // it renders at the same real pixel size at every viewport — same trick as
-    // `labelUnits` itself. The corner is inside a relaxed layout, so whichever
-    // cluster the relaxation lands there varies by selection — the background is
-    // sized to the visible key's own measured box, not guessed, so it stays legible
-    // over whatever ends up underneath it.
+    // `labelUnits` itself. The corner is over the Pacific on the wide box and over
+    // the first grid cell on the phone — the background is sized to the visible
+    // key's own measured box, not guessed, so it stays legible over whatever ends
+    // up underneath it.
     const kx = m.pad;
     const ky = m.top + fs * 1.1;
     const keyPad = fs * 0.35;
@@ -578,6 +828,8 @@ if (stage && canvas && over && payloadEl) {
     });
     if (atRest) atRest.hidden = cbsa !== null;
     if (onSel) onSel.hidden = cbsa === null;
+    if (metricBox) metricBox.hidden = cbsa === null;
+    showPair(null);
     hits.forEach((g) => {
       const on = g.dataset.metro === cbsa;
       g.classList.toggle('sel', on);
@@ -593,30 +845,127 @@ if (stage && canvas && over && payloadEl) {
     }
   }
 
+  // ── the pair readout ─────────────────────────────────────────────────────────
+  //
+  // THE NET IS DRAWN AND NEVER PRINTED. `contract.aggregation` licenses a mark that
+  // aggregates the cells it is made of and refuses the same aggregate as a figure, so
+  // hovering a partner hands the reader THE TWO PUBLISHED CELLS side by side — how many went
+  // each way — and lets them do the subtraction the picture already drew. No net, no share,
+  // no rate: the per-thousand view changes the mark's scale and prints nothing new.
+  //
+  // Every one of these blocks is server-rendered and merely UNHIDDEN here, like every other
+  // string on this page. A client that assembled "12,345" from a payload would put a figure
+  // on screen behind the ledger's back, which is the one thing the copy lint cannot see.
+
+  const card = el<HTMLElement>('#paircard');
+  const pairBlocks = new Map<string, HTMLElement>();
+  card?.querySelectorAll<HTMLElement>('[data-pair]').forEach((p) => pairBlocks.set(p.dataset.pair!, p));
+  const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+  function showPair(cbsa: string | null) {
+    if (hover === cbsa) return;
+    hover = cbsa;
+    // The hovered stream brightens, so the hover has to reach the canvas even when nothing
+    // is in flight to redraw it — a reader who asked for no motion still gets the highlight.
+    kick();
+    if (!card) return;
+    const block = cbsa && cur !== 'rest' ? pairBlocks.get(pairKey(cur, cbsa)) : undefined;
+    pairBlocks.forEach((p, k) => {
+      p.hidden = !block || k !== pairKey(cur, cbsa!);
+    });
+    card.hidden = !block;
+    if (!block) return;
+    const i = D.codes.indexOf(cbsa!);
+    const d = to[i];
+    const r = Math.max(d.r, 10);
+    const box = stage!.getBoundingClientRect();
+    const cx = ox + d.x * scale;
+    const cy = oy + d.y * scale;
+    card.style.visibility = 'hidden';
+    card.style.left = '0px';
+    card.style.top = '0px';
+    const w = card.offsetWidth;
+    const h = card.offsetHeight;
+    let left = cx + r * scale + 10;
+    if (left + w > box.width - 6) left = cx - r * scale - 10 - w;
+    card.style.left = `${Math.max(6, left)}px`;
+    card.style.top = `${Math.max(6, Math.min(cy - h / 2, box.height - h - 6))}px`;
+    card.style.visibility = '';
+  }
+
+  // ── the metric ───────────────────────────────────────────────────────────────
+  //
+  // Two pre-built sets of counts, and the toggle picks one. It appears only once a metro is
+  // chosen, because the resting cluster is a metro's own two published columns and a rate
+  // has no pair to be a rate of — a control that is on screen and does nothing is worse than
+  // one that waits.
+
+  const metricBox = el<HTMLElement>('#metric');
+  const metricBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-metric]')];
+  const scaleNotes = [...document.querySelectorAll<HTMLElement>('[data-scalenote]')];
+
+  function setMetric(next: 'people' | 'rate') {
+    metricBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.metric === next)));
+    scaleNotes.forEach((n) => (n.hidden = n.dataset.scalenote !== next));
+    if (next === metric) return;
+    if (cur === 'rest') {
+      metric = next;
+      return;
+    }
+    from = frame(cur, mode());
+    metric = next;
+    prevKey = cur;
+    render(true);
+    showPair(null);
+  }
+  metricBtns.forEach((b) =>
+    b.addEventListener('click', () => setMetric(b.dataset.metric === 'rate' ? 'rate' : 'people'))
+  );
+
+  // ── pointing at a metro ──────────────────────────────────────────────────────
+  //
+  // THE POINTER IS RESOLVED BY NEAREST CENTRE, not by which circle the event landed in, and
+  // true positions are why. Riverside's disc sits inside Los Angeles's; the hit circles are
+  // the discs, so a click on the middle of Los Angeles lands inside Riverside's circle and
+  // whichever of the two the document draws last silently wins. Nearest centre cannot make
+  // that mistake, and it needs no reordering of the thirty controls — which stay in
+  // longitude order, because that order is the tab order.
+  //
+  // The thirty <g>s remain real focusable buttons, and the keyboard path goes through them
+  // unchanged: a screen reader and a Tab key reach every metro whether or not a pixel of the
+  // picture arrived.
+
+  function nearest(clientX: number, clientY: number): { cbsa: string; d: number } | null {
+    const box = stage!.getBoundingClientRect();
+    const ux = (clientX - box.left - ox) / (scale || 1);
+    const uy = (clientY - box.top - oy) / (scale || 1);
+    let best: string | null = null;
+    let bd = Infinity;
+    for (let i = 0; i < to.length; i++) {
+      const d = Math.hypot(to[i].x - ux, to[i].y - uy);
+      if (d < bd) {
+        bd = d;
+        best = D.codes[i];
+      }
+    }
+    return best ? { cbsa: best, d: bd } : null;
+  }
+  /** Generous enough that a reader aiming at a name hits the mark, and it scales with the
+      mark rather than with the screen, so the phone's grid gets the same slack. */
+  const REACH = () => (mode() === PHONE ? 30 : 46);
+
   if (D.focus === null) {
     let downX = 0;
     let downY = 0;
     let tapping = false;
+
     hits.forEach((g) => {
       const cbsa = g.dataset.metro!;
-      // WebKit swallows the first tap's click on a mark whose pointer handling mutates the
-      // DOM, so a coarse pointer selects on pointerup behind a movement guard; the mouse
-      // keeps click. pointercancel is what replaces pointerleave on touch.
-      g.addEventListener('click', () => select(cbsa));
-      g.addEventListener('pointerdown', (e) => {
-        downX = e.clientX;
-        downY = e.clientY;
-        tapping = e.pointerType !== 'mouse';
+      // Keyboard only. The pointer is handled once, on the overlay, by nearest centre.
+      g.addEventListener('focus', () => {
+        if (cur !== 'rest' && cbsa !== cur) showPair(cbsa);
       });
-      g.addEventListener('pointercancel', () => {
-        tapping = false;
-      });
-      g.addEventListener('pointerup', (e) => {
-        if (!tapping) return;
-        tapping = false;
-        if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) return;
-        select(cbsa);
-      });
+      g.addEventListener('blur', () => showPair(null));
       g.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -625,9 +974,43 @@ if (stage && canvas && over && payloadEl) {
       });
     });
 
-    over!.addEventListener('pointerup', (e) => {
-      if (!(e.target as Element).closest?.('g[data-metro]')) select(null);
+    over!.addEventListener('pointermove', (e) => {
+      if (cur === 'rest') return showPair(null);
+      const n = nearest(e.clientX, e.clientY);
+      showPair(n && n.d < REACH() && n.cbsa !== cur ? n.cbsa : null);
     });
+    over!.addEventListener('pointerleave', () => showPair(null));
+
+    // WebKit swallows the first tap's click on a mark whose pointer handling mutates the
+    // DOM, so a coarse pointer selects on pointerup behind a movement guard; the mouse keeps
+    // click. pointercancel is what replaces pointerleave on touch.
+    const choose = (clientX: number, clientY: number) => {
+      const n = nearest(clientX, clientY);
+      select(n && n.d < REACH() ? n.cbsa : null);
+    };
+    over!.addEventListener('click', (e) => {
+      // `detail === 0` is a click a keyboard synthesised, and it carries no coordinates —
+      // sending it to a nearest-centre test would resolve it against the box's top-left.
+      if (e.detail === 0) return;
+      const pt = (e as PointerEvent).pointerType;
+      if (pt && pt !== 'mouse') return;
+      choose(e.clientX, e.clientY);
+    });
+    over!.addEventListener('pointerdown', (e) => {
+      downX = e.clientX;
+      downY = e.clientY;
+      tapping = e.pointerType !== 'mouse';
+    });
+    over!.addEventListener('pointercancel', () => {
+      tapping = false;
+    });
+    over!.addEventListener('pointerup', (e) => {
+      if (!tapping) return;
+      tapping = false;
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) return;
+      choose(e.clientX, e.clientY);
+    });
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && cur !== 'rest') select(null);
     });
@@ -676,6 +1059,7 @@ if (stage && canvas && over && payloadEl) {
     });
     if (atRest) atRest.hidden = true;
     if (onSel) onSel.hidden = false;
+    if (metricBox) metricBox.hidden = false;
     if (picker) picker.value = initial;
     over.classList.add('focused');
     hits.forEach((g) => {
