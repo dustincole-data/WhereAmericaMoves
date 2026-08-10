@@ -7,6 +7,26 @@
 // corroborated, is in the limits block, which is what keeps this from being a piece about
 // our pipeline.
 //
+// ── 2026-08-10: THE EDIT PASS ────────────────────────────────────────────────────────
+// Ruled by Dustin: "far too much, and it reads like a report, not a website." Every record
+// below was judged keep / cut / shorten. ~1,150 visible words became ~330 on the page plus
+// the limits behind one control. What that pass was allowed to do and what it was not:
+//
+//   • DUPLICATION was the whole problem. Beat ③ restated the limits' per-thousand section
+//     almost verbatim; the method note restated `FLOOR_NOTE`; the keystrip restated
+//     `AT_REST`. In every such pair the argument survives ONCE, in the place that owns it.
+//   • The self-history records went. A page that keeps minutes of its own previous versions
+//     ("this block used to say the view had been deleted") is the pipeline talking.
+//   • Nothing a constraint requires was cut. "Never means zero" survives verbatim, D0019's
+//     disclosure survives, the objection to the per-thousand view survives at full force,
+//     and the two-published-columns rule moved into the limits rather than being deleted.
+//   • One record was cut for being FALSE, not long: `HERO_LINES[2]` still called the wide
+//     screen "a rough map" after 02c61ba put the clusters at true projected points. Its true
+//     half is now `PHONE_NOTE`.
+//   • The claim register bar is gone (`REGISTER_CLAIM`, `BAR_*`, `REGISTER_FRAME` with it).
+//     `WITHHELD_LINE` and `FLOOR_NOTE` stayed: with the bar gone they are the only place the
+//     headline's own figure appears, and `RING_NOTE` describes what replaced it on the mark.
+//
 // Every figure below is read out of the package at build. Nothing is typed in, and nothing
 // is derived: where a number needed arithmetic to reach, it is not here.
 //
@@ -29,12 +49,9 @@ import {
   PACKAGE_STAMP,
   RELATIONS,
   TOTALS_BY_CBSA,
-  frameMeta,
   type MetroTotals,
 } from '../lib/package';
 import { METRO_BY_CBSA } from '../lib/metros';
-
-const N_METROS = UNIVERSE.size;
 
 // ── the frame ──────────────────────────────────────────────────────────────────
 
@@ -68,9 +85,15 @@ export const STANDFIRST: CopyRecord[] = [
 /** The noun, not a pronoun. "them" and "that total" both reached back to a number the reader
     last saw a full screen above, and the NEAREST total on the way down is the crowd's
     1,555,397 — a different universe the piece exists to keep separate. Naming both figures is
-    three words and closes the only route by which the page invited its own forbidden sum. */
+    three words and closes the only route by which the page invited its own forbidden sum.
+
+    2026-08-10: this line and the floor note under it are now the ONLY place the headline's
+    own figure appears. The claim register bar is gone, and the dashed ring that replaced it
+    on the mark draws each metro's own suppressed mass — the same absence, thirty times over,
+    and a different quantity from this one. So the national figure has to carry itself in
+    type, which is why the shortening here stopped at the pronoun fix and did not go further. */
 export const WITHHELD_LINE = say(
-  `${fmtInt(WITHHELD)} of the ${fmtInt(TOTAL_MOVERS)} are inside that total and outside every map of it: counted, and attributable to no pair of counties.`,
+  `${fmtInt(WITHHELD)} of the ${fmtInt(TOTAL_MOVERS)} are inside that total and attached to no pair of counties.`,
   'C0003'
 );
 
@@ -79,42 +102,12 @@ export const FLOOR_NOTE = say(
   'apparatus'
 );
 
-export const REGISTER_CLAIM = say('The claim · one row · gate-confirmed · C0003', 'apparatus');
-export const BAR_DISCLOSED = say('attributable to a specific pair of counties', 'apparatus');
-export const BAR_WITHHELD = say(fmtInt(WITHHELD), 'C0003');
-export const BAR_WITHHELD_SUB: CopyRecord[] = [
-  say('below the disclosure floor', 'apparatus'),
-  say('counted, not locatable', 'apparatus'),
-];
-
-/** The frame is a different universe and the register line has to say so, or the crowd
-    reads as a part of the bar. The crowd now comes first, so the bar it is not a part of is
-    below it rather than above — C's two-labelled-registers rule is about the labelling, not
-    about which one is on top. */
-export const REGISTER_FRAME = say(
-  `The frame · ${fmtInt(frameMeta('top_metro_relations').rows)} disclosed pairs among these ${N_METROS} metros · ` +
-    `a different universe from the bar below`,
-  'top_metro_relations'
-);
-
 /** The crowd is the complement. Rigor 13 confirmed the aggregate, so the piece may now say
-    it out loud rather than leaving it to area alone — one sentence, the claim's own. */
+    it out loud rather than leaving it to area alone — one sentence, the claim's own. It sits
+    beside the standfirst now that the register it used to be labelled against is gone;
+    `REGISTER_FRAME` went with the bar, since its whole job was telling two registers apart
+    and there is only one left. */
 export const COMPLEMENT = say(C0005.text, 'C0005');
-
-/** Cut hard 2026-08-08 — Dustin: "way too much text," this said four times what the
-    panel above the mark, the on-chart key and the beat below it already say once
-    each. One record left: the one fact those three places do not carry, and it is
-    load-bearing. `not_claimable` forbids "a map that colours a metro by direction as
-    a claimed fact", so the resting cluster carries its two published columns as two
-    parts rather than a verdict as one colour — this is the sentence that stops a
-    reader decoding the cut as the thing the package refused to claim. */
-export const LEGEND: CopyRecord[] = [
-  say(
-    'A resting cluster is cut into two published columns — arrived and left — never ' +
-      'coloured by which way the metro’s total went.',
-    'apparatus'
-  ),
-];
 
 /** The key that rides with the picture. Three short spans: the unit, the absence, and the
     two things a reader would otherwise be entitled to assume and be wrong about.
@@ -125,22 +118,38 @@ export const LEGEND: CopyRecord[] = [
     the quietest metro, so one scale draws half the set as a field of single dots. The cost
     is that two selections are not comparable to each other, and a reader is told that
     rather than left to assume otherwise. */
+/** A SECOND CUT, EARNED BY THE GLYPHS. `Key.astro` draws each of these beside the thing it is
+    about, in the canvas's own ink, so the clause that used to NAME the shape is now redundant
+    with the picture next to it: "A dashed empty ring is a direction the record discloses
+    nothing for" is a dashed empty ring, drawn, plus what it means. Every sentence here stopped
+    describing what the reader can see and kept only what a shape cannot say.
+
+    "Never zero" survives verbatim. It is the one clause in this file a constraint names. */
 export const HERO_LINES: CopyRecord[] = [
-  say(
-    'An exchange too small to fill a dot is still drawn at one dot, and those are not to scale.',
-    'apparatus'
-  ),
-  say(
-    'A dashed empty ring is a direction the record discloses nothing for. It means withheld ' +
-      'or absent. It never means zero.',
-    'apparatus'
-  ),
-  say(
-    'Sizes compare inside one view rather than between two. Where a cluster sits is a rough ' +
-      'map on a wide screen and a grid on a phone, and carries no quantity either way.',
-    'apparatus'
-  ),
+  say('Too small to fill a dot is still one dot.', 'apparatus'),
+  say('Nothing disclosed here: withheld or absent, never zero.', 'apparatus'),
+  say('Sizes compare inside one view, not between two.', 'apparatus'),
 ];
+
+/** Split out of `HERO_LINES[2]`, which used to end "…a rough map on a wide screen and a grid
+    on a phone." Half of that sentence went STALE at 02c61ba: the clusters now sit at their
+    true projected points on a real coastline, so the wide screen is a map and saying it is a
+    rough one is false. The phone half is still true and still owed, so it is its own record,
+    shown at the width where it applies rather than on every screen. */
+export const PHONE_NOTE = say(
+  'On a phone the clusters sit on a grid rather than a map, and where one sits carries no quantity.',
+  'apparatus'
+);
+
+/** The dashed outer ring, which is where the claim register went. The bar drew ONE national
+    proportion in a section of its own; the ring draws each metro's own suppressed mass, at
+    that cluster's own scale, thirty times inside the mark the reader is already looking at.
+    Dashed because dashed already means "the record discloses nothing here" everywhere else
+    on this page — the empty partner ring uses it — so the absence reads without a key. */
+export const RING_NOTE = say(
+  'The metro’s own withheld mass: inside its totals, attached to no pair of counties.',
+  'apparatus'
+);
 
 // ── beat ② · no county won ─────────────────────────────────────────────────────
 // The better hook, and it still does not lead: it is a county-level negative in a piece
@@ -169,15 +178,7 @@ export const BEAT_RATES: CopyRecord[] = [
   say('The denominator is a different universe.', 'apparatus'),
   say(
     'These counts are filers and their dependents; a population is residents. Dividing one ' +
-      'by the other mixes two universes, and the answer is not the share of a place that ' +
-      'moved — non-filers are missing from the top of the fraction and present at the bottom ' +
-      'of it, unevenly, and most of all where a migration story looks first.',
-    'apparatus'
-  ),
-  say(
-    'The per-thousand view is here anyway, and it is drawn rather than stated: it changes ' +
-      'the scale the picture is on, and every number this page prints is still a single ' +
-      'published cell. No rate appears as a figure anywhere.',
+      'by the other mixes two universes, so the answer is not the share of a place that moved.',
     'apparatus'
   ),
 ];
@@ -186,12 +187,7 @@ export const BEAT_RATES: CopyRecord[] = [
 
 export const BEAT_ABSENT: CopyRecord[] = [
   say(`${ABSENT_PAIRS} of ${FRAME_PAIRS} pairs are not there.`, 'C0005'),
-  say(
-    `Between every two of these ${N_METROS} metros there is a direction people could travel, and ` +
-      `for ${ABSENT_PAIRS} of those directions the record discloses no flow at all. Select either ` +
-      `end and the ring at the other is drawn empty.`,
-    'C0005'
-  ),
+  say('Select either end and the ring at the other is drawn empty.', 'apparatus'),
 ];
 
 // ── the hero's own controls ────────────────────────────────────────────────────
@@ -211,14 +207,15 @@ export const SELECT_LABEL = say('Choose a metro', 'apparatus');
 /** Two invitations, one on screen at a time, and both server-rendered — the client swaps
     which is hidden and writes no text of its own. */
 export const AT_REST = say(
-  'Each metro is a cluster of dots. Green is who arrived, red is who left, and the dashed ' +
-    'line across it is where the two would be even. Choose one to see how it trades with ' +
-    'the rest.',
+  'Each metro is a cluster of dots. Green arrived, red left. Choose one.',
   'apparatus'
 );
+/** Green and red mean a DIFFERENT thing here than they do at rest — one metro's own two
+    columns before a selection, the sign of an exchange after one — so both clauses stay
+    however short this gets. Dropping either is how a reader ends up confidently misreading
+    the colour. */
 export const ON_SELECT = say(
-  'Every other metro is now its exchange with the one you chose. Green means more people ' +
-    'came than went. Red means more went than came.',
+  'Now each metro is its exchange with the one you chose. Green: more came than went. Red: the reverse.',
   'apparatus'
 );
 export const RESET = say('Show every metro', 'apparatus');
@@ -227,9 +224,7 @@ export const RESET = say('Show every metro', 'apparatus');
     from the still picture: which way the dots run, and that their number is the same quantity
     the cluster is made of rather than a second one. */
 export const STREAM_NOTE = say(
-  'A stream runs toward the metro that gained and away from the one that lost, and its width ' +
-    'is the size of that exchange. One pass sends exactly as many dots as the cluster it ' +
-    'comes from is made of.',
+  'Runs toward the metro that gained. Width is the size of the exchange.',
   'apparatus'
 );
 
@@ -256,10 +251,7 @@ export const SCALE_TOTAL = say(
   'apparatus'
 );
 export const SCALE_RATE = say(
-  'Every dot is still the same size, and here a dot is a fixed rate rather than a fixed ' +
-    'number of people: each exchange is divided by the residents of the OTHER metro. The ' +
-    'numerator counts filers and their dependents and the denominator counts every resident, ' +
-    'so the two are different universes and this is not the share of a place that moved.',
+  'Divided by the residents of the OTHER metro. Filers over residents is two universes, not a share.',
   'apparatus'
 );
 
@@ -368,9 +360,8 @@ function buildMetroCopy(cbsa: string): MetroCopy {
     supIn,
     supOut,
     supNote: say(
-      'These are the people the publisher counted in this metro’s totals and could not attribute ' +
-        'to any specific pair of counties. They are not a rest-of-U.S. quantity, and the split ' +
-        'cannot be recovered from this source.',
+      'Counted in this metro’s totals and attached to no county pair. Not a rest-of-U.S. ' +
+        'quantity, and the split cannot be recovered from this source.',
       'apparatus'
     ),
     partners: say(
@@ -452,6 +443,18 @@ export function pairCopy(): PairCopy[] {
 
 export const LIMITS_TITLE = say('What this piece cannot tell you', 'apparatus');
 
+/** Six sections behind ONE control, where there used to be five open on the page at 726
+    words. Two things happened here on 2026-08-10 and they are different acts:
+      • CUT. The self-history record ("an earlier version divided every figure by a metro's
+        resident population, and this block used to say…") is gone. It was the page keeping
+        minutes of its own edit history, which is the pipeline talking, and no reader is owed
+        it. Every other record was shortened, not dropped: the objections are the point.
+      • MOVED. `LEGEND[0]` — the two-published-columns rule — was a line under the mark
+        restating a rule nothing else on the page states. It is a limit, so it lives here now,
+        as its own section.
+    The collapse itself changes nothing about disclosure: every string is still server-rendered
+    into dist, so the scan reads it, a screen reader reaches it, and Ctrl-F finds it. What
+    changed is that the page no longer opens on nine hundred words of qualification. */
 export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
   {
     head: say('Nothing here is corroborated', 'apparatus'),
@@ -459,43 +462,39 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
       say(
         'The inbound and outbound files are one measurement in two layouts, so their agreement ' +
           'certifies nothing: the check that compares them subtracts a number from itself and ' +
-          'cannot fail. “Confirmed against the inbound file” is not a sentence this project can write.',
+          'cannot fail.',
         'apparatus'
       ),
     ],
   },
   {
-    head: say('The per-thousand view is back, and here is what is wrong with it', 'apparatus'),
+    head: say('A cluster is two columns, not a verdict', 'apparatus'),
     body: [
       say(
-        'An earlier version divided every figure by a metro’s resident population, and this ' +
-          'block used to say the view had been deleted and would not return. It has returned, ' +
-          'and saying otherwise while a working toggle sits above would be the page ' +
-          'contradicting itself rather than qualifying itself.',
+        'A resting cluster is cut into two published columns — arrived and left — never ' +
+          'coloured by which way the metro’s total went.',
+        'apparatus'
+      ),
+    ],
+  },
+  {
+    head: say('The per-thousand view, and what is wrong with it', 'apparatus'),
+    body: [
+      say(
+        'These counts are tax filers and their dependents, not residents. Non-filers — the very ' +
+          'poor, many elderly people, undocumented residents — are missing from the top of the ' +
+          'fraction and present at the bottom of it, unevenly, and above all where a migration ' +
+          'story looks first. A ratio of two universes is not a rate of either one.',
         'apparatus'
       ),
       say(
-        'The objection that removed it is unchanged and unanswered. These counts are tax ' +
-          'filers and their dependents, not residents, so non-filers — the very poor, many ' +
-          'elderly people, undocumented residents, some students — are absent from the top of ' +
-          'the fraction and present at the bottom of it. They are absent unevenly, and by most ' +
-          'exactly where a migration story looks first. A ratio of two universes is not a rate ' +
-          'of either one.',
+        'The view divides an exchange by the residents of the OTHER metro and spends the result ' +
+          'on how many dots to draw. No rate is printed anywhere on this page.',
         'apparatus'
       ),
       say(
-        'What changed is where the line sits. The view divides an exchange by the residents of ' +
-          'the OTHER metro and spends the result on how many dots to draw — dividing by the ' +
-          'metro you selected would put one denominator under all twenty-nine and redraw the ' +
-          'first view at another size. No quotient is printed, spoken or carried anywhere on ' +
-          'this page as a figure: it is a scale for a drawing, and the numbers beside the ' +
-          'drawing are the cells the publisher published.',
-        'apparatus'
-      ),
-      say(
-        'The resident estimates are the Census Bureau’s, for the same July the metro set was ' +
-          'drawn from. They come from a different source than everything else here, and they ' +
-          'are the only quantity on this page that is not from the verified package.',
+        'The resident estimates are the Census Bureau’s, and they are the only quantity here ' +
+          'that is not from the verified package.',
         'apparatus'
       ),
     ],
@@ -505,10 +504,9 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
     body: [
       say(C0006.text, 'C0006'),
       say(
-        'The count is claimable and the membership is not. Across the three defensible ways to ' +
-          'decide a metro’s direction the count barely moves, but three of the thirty change side. ' +
-          'So this piece prints every metro’s own net as a number and never calls one a gainer or ' +
-          'a loser, and no map here colors a metro by direction.',
+        'The count is claimable; the membership is not. Across three defensible ways to decide a ' +
+          'metro’s direction the count barely moves, but three of the thirty change side. So this ' +
+          'page prints every metro’s own net and names no gainer and no loser.',
         'apparatus'
       ),
     ],
@@ -518,11 +516,8 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
     body: [
       say(
         'Each metro’s unattributable column is every move the publisher did not attach to a ' +
-          'specific county pair. That includes moves inside the metro small enough to fall below ' +
-          'the disclosure floor, which were therefore never subtracted along with the rest of the ' +
-          'internal mass. The split cannot be recovered from this source. It is bounded rather ' +
-          'than unknown, since every absent pair is under the floor. But it is not zero, and it ' +
-          'is not the same size in every metro.',
+          'specific county pair, including moves inside the metro that fall below the disclosure ' +
+          'floor. The split cannot be recovered from this source, and it is not zero.',
         'apparatus'
       ),
     ],
@@ -531,12 +526,9 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
     head: say('These thirty metros are a choice, and it is ours', 'apparatus'),
     body: [
       say(UNIVERSE.selection.rule.replace(/^the/, 'The') + '.', 'apparatus'),
-      say(UNIVERSE.selection.measure + '.', 'apparatus'),
       say(
         'Population was chosen over migration volume deliberately, so the set is not drawn by ' +
-          'the numbers it exists to measure. The IRS did not choose these metros; this project ' +
-          'did. Population selects the units, and in the per-thousand view it also scales the ' +
-          'drawing — in neither job does it appear as a figure.',
+          'the numbers it exists to measure. The IRS did not choose these metros; this project did.',
         'apparatus'
       ),
       say(UNIVERSE.selection.source + '.', 'apparatus'),
@@ -546,23 +538,18 @@ export const LIMITS: { head: CopyRecord; body: CopyRecord[] }[] = [
 
 // ── the footer ─────────────────────────────────────────────────────────────────
 
+/** Three records where there were five. Both cuts were duplicates rather than trims: the
+    "baked once at build … nothing is fetched at build" line is the pipeline describing itself
+    to a reader who did not ask, and the floor statement is `FLOOR_NOTE` a second time, in
+    longer words, on the same page. */
 export const METHOD: CopyRecord[] = [
   say(MANIFEST.source.attribution, 'apparatus'),
   say(
-    'Figures are baked once at build from a verified package committed into this repository. ' +
-      'Nothing updates live, and nothing is fetched at build.',
-    'apparatus'
-  ),
-  say(
     'A unit is the county of the address on the return, so a move here is a change of filing ' +
-      'address between the two years, not a dated relocation event.',
+      'address, not a dated relocation.',
     'apparatus'
   ),
-  say(
-    `Metros are Core-Based Statistical Areas under the Census delineation of July 2023.`,
-    'apparatus'
-  ),
-  say(MANIFEST.source.disclosure_floor.statement.split('Visible in the raw bytes')[0].trim(), 'apparatus'),
+  say(`Metros are Core-Based Statistical Areas, July 2023 delineation.`, 'apparatus'),
 ];
 
 export const METHOD_LINK = say('irs.gov/statistics/soi-tax-stats-migration-data', 'apparatus');

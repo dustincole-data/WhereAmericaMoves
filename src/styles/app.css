@@ -78,10 +78,16 @@
    instead of shrinking the picture. The mark is then the same size before and after a click
    at every width, which is what stops it moving under the pointer and what stops a resize
    from cancelling the re-form the click started. */
+/* THE MIDDLE ROW TAKES WHAT IS LEFT, rather than what a constant said would be left. This was
+   `max(340px, calc(100svh - headerH - 136px - 48px))`: the band's floor and the key's height,
+   written into the stylesheet twice each. The glyph key is 88px where the old paragraph strip
+   was 48, so the hero overflowed its own viewport by exactly the difference the moment the key
+   changed — and it would have done it again on any width where the key wraps to another row.
+   `minmax(340px, 1fr)` asks the two `auto` rows what they actually need and keeps the floor. */
 .hero {
   min-height: calc(100svh - var(--headerH));
   display: grid;
-  grid-template-rows: auto max(340px, calc(100svh - var(--headerH) - 136px - 48px)) auto;
+  grid-template-rows: auto minmax(340px, 1fr) auto;
 }
 /* A BAND, not a rail, and the arithmetic is the reason. A 1240×812 plate is squarer than any
    laptop viewport, so it is always height-bound: at 1440×900 it fits at 1307×856 and uses 91%
@@ -114,11 +120,15 @@
   min-height: 136px;
   padding: 0 var(--gutter) 0.5rem;
 }
-.band h1 {
+.band .bhead {
   grid-area: head;
 }
-.band .sf {
+.band .buniverse {
   grid-area: universe;
+}
+.band .bhead > *,
+.band .buniverse > * {
+  margin: 0;
 }
 .band .pick {
   grid-area: pick;
@@ -143,12 +153,19 @@
    objection was not that the sentence was wrong — it is 06's ruled headline — but that it
    was set at 54px above a map nobody had reached yet. One line, no wrap: a second line here
    costs the map twenty-odd pixels of height and thirty of width. */
+/* SMALL, BUT LEADING. It was clamp(1rem … 1.25rem) at 600, which put the page's one finding at
+   16–20px — smaller than the limits block's own H2 and tying its H3s, which is how a piece ends
+   up reading as a report with a caption on top. The ceiling moves to 28px and the tracking
+   tightens; the whole band still fits its floor, so the mark loses nothing. This is the only
+   type on the page that gets bigger — everything else got smaller or fewer. */
 .band h1 {
   margin: 0;
-  font-size: clamp(1rem, 1.32vw, 1.25rem);
+  font-size: clamp(1.3rem, 1.85vw, 1.75rem);
   font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.022em;
+  line-height: 1.16;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  max-width: 26ch;
 }
 .sf {
   margin: 0 0 0.15rem;
@@ -352,81 +369,105 @@
   color: var(--muted);
 }
 
-/* The mark's key, under the picture, on the same screen as it. Two sentences on one line
-   where the width allows, so it costs the map about thirty pixels rather than a section. */
-.keystrip {
+/* `.keystrip` was the paragraph the glyph key replaced on 2026-08-10. Its rules went with it;
+   `.keyglyphs` below is what is under the picture now. */
+
+/* ── the key, in the mark's own hand ───────────────────────────────────────────
+ *
+ * A row of small glyph-and-phrase pairs instead of a paragraph of grey prose. `auto-fit` with
+ * a floor rather than a fixed column count: the entries are different lengths, the strip has
+ * to survive the metric toggle swapping an 11-word phrase for a 16-word one, and a breakpoint
+ * per width is furniture. It wraps where it needs to and nowhere else.
+ *
+ * The ink goes UP, not down: 0.72rem at `--muted` on a tinted near-white was the washed-grey
+ * failure — small type has less ink to spend, so it cannot also spend contrast. `--ink-2` at
+ * the same size is the same restraint and legible. */
+
+.keyglyphs {
+  list-style: none;
   margin: 0;
-  padding: 0.45rem var(--gutter) 0;
-  font-size: 0.72rem;
+  padding: 0.9rem var(--gutter) 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.5rem clamp(1rem, 2.2vw, 2.4rem);
+  font-size: 0.735rem;
   line-height: 1.4;
-  color: var(--muted);
+  color: var(--ink-2);
 }
-.keystrip span + span {
-  margin-left: 1.4rem;
-}
-
-.register {
-  margin: 0 0 0.65rem;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-/* ── the claim register ─────────────────────────────────────────────────────── */
-
-.claimfig {
-  margin: 0 0 3.5rem;
-}
-.claimwrap {
-  position: relative;
-}
-.claimplate svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* The captions are HTML, positioned against the divider the plate emitted. This is why the
-   plate ships as two files rather than one: a label that has to sit against the cut cannot
-   be placed over an image whose height changes with what was removed from it. The disclosed
-   label goes back INSIDE the bar, which is where 09's own plate put it — without it the
-   register is a flat blue slab with a number floating beside it. */
-.cap-left {
-  position: absolute;
-  left: 1.1rem;
-  bottom: 22%;
-  max-width: calc(var(--cut) - 3rem);
-  color: #fff;
-  font-size: 0.95rem;
-}
-.claimcap {
-  position: relative;
-  display: block;
-  min-height: 4.5rem;
-}
-.cap-right {
-  position: absolute;
-  left: var(--cut);
-  top: -0.9rem;
-  padding-left: 0.9rem;
+.keyglyphs li {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
 }
-.cap-right b {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: clamp(1.35rem, 2.6vw, 2rem);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+/* `display: flex` beats the `hidden` attribute's UA `display: none`, and the metric toggle
+   drives these two entries by exactly that attribute — so without this the people note and the
+   rate note are both on screen, saying different things about the same dots. */
+.keyglyphs li[hidden] {
+  display: none;
 }
-.cap-right i {
-  font-style: normal;
-  font-size: 0.85rem;
+.keyglyphs svg {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  /* The glyph sits on the first line's optical centre, not on its baseline: these are round
+     marks, and a circle aligned to a baseline reads as falling off the line. */
+  margin-top: -0.06rem;
+}
+/* The two entries with no picture — the ones about how to READ the mark rather than about a
+   shape in it — keep the row's rhythm by taking the glyph's width as indent. */
+.keyglyphs .noglyph {
+  padding-left: calc(1.15rem + 0.5rem);
+}
+/* True below 720px and false above it, so it is shown by width rather than hedged in the
+   sentence. `display` and not `hidden`, because the string still has to be in dist for the
+   scan and for a reader who searches the page. */
+.keyglyphs .phoneonly {
+  display: none;
+}
+@media (max-width: 720px) {
+  .keyglyphs .phoneonly {
+    display: flex;
+  }
+}
+
+/* The same ring at type size, in front of the national figure. `0.9em` and `text-bottom` so it
+   scales with the sentence and sits on it rather than beside it. */
+.ringmark {
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.09em;
+  margin-right: 0.4em;
+}
+
+/* The claim register's rules lived here — `.register`, `.claimfig`, `.claimwrap`,
+   `.claimplate`, `.cap-left`, `.claimcap`, `.cap-right` — and went with the bar on
+   2026-08-10. What drew the withheld mass now is a dashed ring on every cluster, drawn on the
+   canvas, so it has no CSS at all. */
+
+/* ── the headline's own evidence, in the band ────────────────────────────────────
+ * Two records that used to sit under the bar, a screen below the headline they belong to.
+ * The figure leads at reading size; the floor note is the same sentence's tail rather than a
+ * paragraph of its own, because it is the REASON and nobody needs it as a heading. */
+
+/* Sized against `.sf`, not against the headline: these are evidence under a figure, and the
+   band's whole budget is height the mark does not get. */
+.withheld {
+  margin: 0.3rem 0 0 !important;
+  max-width: 34rem;
+  font-size: clamp(0.74rem, 0.86vw, 0.81rem);
+  line-height: 1.42;
+  color: var(--ink-2);
+}
+.withheld .floor {
   color: var(--muted);
-  line-height: 1.4;
+}
+.complement {
+  margin: 0.2rem 0 0 !important;
+  max-width: 30rem;
+  font-size: clamp(0.74rem, 0.86vw, 0.81rem);
+  line-height: 1.42;
+  color: var(--ink-2);
 }
 
 /* ── the mark: a canvas of dots, and the names over it ──────────────────────────
@@ -586,50 +627,24 @@
   height: auto;
 }
 
-.legend {
-  max-width: var(--measure);
-  margin-top: 1.6rem;
-  margin-bottom: 2.5rem;
-}
-.legend p {
-  margin: 0 0 0.45rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.legend .complement {
-  font-size: 0.95rem;
-  color: var(--ink);
-  margin-bottom: 0.85rem;
-}
-
-/* ── the claim register, now under the map ──────────────────────────────────── */
-
-.claimsec {
-  margin-bottom: 3rem;
-}
-.claimsec .withheld {
-  margin: 0 0 0.4rem;
-  max-width: var(--measure);
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: var(--ink-2);
-}
-.claimsec .floor {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
+/* `.legend` and `.claimsec` were both deleted on 2026-08-10 with the blocks they styled: the
+   legend's three lines went to the keystrip, the limits and the band, and the claim section
+   went with the bar. */
 
 /* ── the three remaining beats, as captions ─────────────────────────────────── */
 
+/* A HAIRLINE PER BEAT, not one rule over all three. Three findings under a single long rule
+   read as one block of report; three short columns each opening on their own hairline read as
+   three notes. Same ink, same weight, one fewer thing that looks like a section header. */
 .beats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1.25rem, 3vw, 2.5rem);
-  padding-top: 1.6rem;
-  border-top: 1px solid var(--rule);
-  margin-bottom: 3rem;
+  gap: clamp(1.4rem, 3.2vw, 3rem);
+  margin: clamp(1.6rem, 3.4vw, 3.2rem) 0 clamp(2.4rem, 4vw, 3.6rem);
+}
+.beat {
+  border-top: 1px solid var(--ink);
+  padding-top: 0.6rem;
 }
 @media (max-width: 720px) {
   .beats {
@@ -786,10 +801,44 @@
    higher-contrast than 90 words of finding. Ranked down — the page's total type goes DOWN,
    which is the direction the reduction was asked for; only the order changes. */
 .limits h2 {
-  margin: 0 0 1.5rem;
+  margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+/* ── the one control ──────────────────────────────────────────────────────────
+ * The summary is a real target, so it gets a real target's affordances: a pointer, a hover
+ * state, and the disclosure triangle replaced by a marker that says which way it is about to
+ * go. `list-style: none` plus the WebKit pseudo-element is both halves of removing the
+ * default triangle; either one alone leaves it on one engine. */
+
+.limitbox > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  cursor: pointer;
+  list-style: none;
+  padding-bottom: 0.4rem;
+}
+.limitbox > summary::-webkit-details-marker {
+  display: none;
+}
+.limitbox > summary::after {
+  content: '+';
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--muted);
+}
+.limitbox[open] > summary::after {
+  content: '–';
+}
+.limitbox > summary:hover h2,
+.limitbox > summary:hover::after {
+  color: var(--claim);
+}
+.limitbody {
+  padding-top: 1.5rem;
 }
 .limit {
   margin-bottom: 1.75rem;
@@ -822,6 +871,9 @@
   font-family: var(--font-mono);
   font-size: 0.78rem !important;
   letter-spacing: 0.01em;
+  /* Outside the control now, so it needs its own margin rather than `.method p`'s. */
+  margin: 1.4rem 0 0;
+  color: var(--muted);
 }
 
 /* ── phone ──────────────────────────────────────────────────────────────────── */
@@ -851,16 +903,35 @@
   .band {
     display: contents;
   }
+  /* The two column wrappers dissolve for the same reason the band does — otherwise they are
+     flex items with no `order`, which defaults to 0, and both columns land above the headline.
+     That is exactly the trap the key strip's note below records, hit a second time. With them
+     gone their children are the flex items, and `order: 1` twice keeps DOM order between the
+     two: headline, then the figure under it. */
+  .bhead,
+  .buniverse {
+    display: contents;
+  }
   .band h1 {
     order: 1;
     font-size: 1.2rem;
     padding: 0 var(--gutter);
     margin-bottom: 0.4rem;
   }
+  .band .withheld {
+    order: 1;
+    padding: 0 var(--gutter);
+    margin-bottom: 0.5rem !important;
+  }
   .band .sf {
     order: 2;
     padding: 0 var(--gutter);
     margin-bottom: 0.7rem;
+  }
+  .band .complement {
+    order: 2;
+    padding: 0 var(--gutter);
+    margin-bottom: 0.7rem !important;
   }
   .band .pick {
     order: 3;
@@ -918,11 +989,13 @@
     aspect-ratio: 390 / 748;
   }
   /* `display: contents` on .band lifts its children into the hero's own flex order, and the
-     key strip is not one of them — without an explicit order it defaults to 0 and lands above
-     the headline. */
-  .keystrip {
+     key is not one of them — without an explicit order it defaults to 0 and lands above the
+     headline. One column on a phone: two glyph rows side by side at 390px puts four words on
+     a line. */
+  .keyglyphs {
     order: 5;
-    padding-top: 0.75rem;
+    grid-template-columns: 1fr;
+    padding-top: 0.85rem;
   }
   .panel .readout {
     order: 6;
@@ -945,27 +1018,9 @@
     margin-top: 0.35rem;
     font-size: 11px;
   }
-  /* A three-line all-caps mono register shouts louder than the sentence above it. */
-  .register {
-    font-size: 10px;
-    letter-spacing: 0.02em;
-  }
-  .claimcap {
-    min-height: 0;
-  }
-  /* The label does not fit inside a 250px bar, so on a phone both captions stack under it. */
-  .cap-left,
-  .cap-right {
-    position: static;
-    max-width: none;
-    padding-left: 0;
-    display: block;
-    margin: 0.6rem 0 0;
-    color: var(--muted);
-  }
-  .cap-right b,
-  .cap-right i {
-    display: block;
+  .withheld,
+  .complement {
+    font-size: 0.85rem;
   }
 }
 

@@ -2,9 +2,17 @@
 // THE SHAPE. What the 2026-08-07 form ruling changed and what it did not.
 //
 // The arc, the spine and the plumbing are untouched: the crowd is still first and still the
-// control, the claim register still sits beneath it on its own scale, the three beats are
-// still captions, and the package wiring, the copy module, the lint and the footer stamp
-// are the same files they were. What changed is the mark.
+// control, the three beats are still captions, and the package wiring, the copy module, the
+// lint and the footer stamp are the same files they were. What changed is the mark.
+//
+// 2026-08-10 — THE CLAIM REGISTER IS GONE. It was a full-width bar in a section of its own,
+// and it was the only mark drawing the headline. What replaced it is a dashed outer ring on
+// every cluster, whose annulus area is that metro's own suppressed mass at the cluster's own
+// scale — so the absence is now drawn thirty times inside the mark the reader is already
+// looking at, instead of once in a chart below it. The two quantities are NOT the same: the
+// headline's figure is national and belongs to no metro, so `WITHHELD_LINE` and `FLOOR_NOTE`
+// moved up beside the headline and carry it in type. The legend block went with the bar —
+// `REGISTER_FRAME` existed to tell two registers apart and there is one left.
 //
 // Rounds 1–4 drew 863 marks at real geography and put lines on selection. That route was
 // rejected four times on one axis — "it's just a bunch of little lines, and the volume
@@ -34,18 +42,15 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import MetroReadout from '../components/MetroReadout.astro';
+import Key from '../components/Key.astro';
 import { METROS } from '../lib/metros';
-import { assertPlate } from '../lib/package';
 import { buildField } from '../lib/field';
 import { WIDE } from '../lib/clusters';
 import { metroCopy, pairCopy } from '../copy';
 import {
-  STREAM_NOTE,
   METRIC_LABEL,
   METRIC_TOTAL,
   METRIC_RATE,
-  SCALE_TOTAL,
-  SCALE_RATE,
   PAIR_UNIT,
   HOME_TITLE,
   HOME_DESC,
@@ -54,14 +59,7 @@ import {
   STANDFIRST,
   WITHHELD_LINE,
   FLOOR_NOTE,
-  REGISTER_CLAIM,
-  BAR_DISCLOSED,
-  BAR_WITHHELD,
-  BAR_WITHHELD_SUB,
-  REGISTER_FRAME,
   COMPLEMENT,
-  LEGEND,
-  HERO_LINES,
   BEAT_COUNTY,
   BEAT_RATES,
   BEAT_ABSENT,
@@ -73,13 +71,7 @@ import {
   SOURCE_TAG,
 } from '../copy';
 
-import claimSvgRaw from '../assets/09-claim.svg?raw';
 import hues from '../assets/09-hues.json';
-
-// The one drift a hash cannot see: a plate drawn from an older package beside a fresh
-// manifest. The claim register is the last baked plate on the page and it is still asserted.
-const claimSvg = assertPlate(claimSvgRaw, '09-claim.svg');
-const cut = Number(/data-cut="([\d.]+)"/.exec(claimSvg)![1]);
 
 const field = buildField();
 const byCbsa = new Map(METROS.map((m) => [m.cbsa, metroCopy(m.cbsa)]));
@@ -119,8 +111,33 @@ const heroData = {
   <!-- ── the hero: one thin band, and the mark taking the rest of the screen ── -->
   <section class="hero">
     <div class="band">
-      <h1>{HEADLINE.text}</h1>
-      <p class="sf">{STANDFIRST[0].text} <span>{STANDFIRST[1].text}</span></p>
+      <!-- TWO COLUMNS, EACH A FIGURE AND ITS OWN EVIDENCE, and the wrappers are why: the band
+           is a named-area grid, so a bare <p> added to it gets AUTO-PLACED — which put the
+           withheld line in an implicit row on a wide screen and above the H1 on a phone, where
+           the areas collapse. Grouping puts each line in the column that owns it and fixes the
+           reading order at every width.
+             head      the headline, then the national figure the headline is about
+             universe  the universe it counts, then the crowd's own total, which is the other
+                       total on the page and the one the piece exists to keep separate
+           The claim register bar that used to carry the first of these is gone; the rings on
+           the clusters draw each metro's own share of the same absence, which is a DIFFERENT
+           quantity, so this is the only place the national figure appears. -->
+      <div class="bhead">
+        <h1>{HEADLINE.text}</h1>
+        <!-- The dashed ring, at type size, in front of the national figure. The rings on the
+             map are each metro's OWN share of this and the two are different quantities — but
+             they are the same KIND of absence, and the glyph is what says so without a sentence
+             claiming it. Same dash, same weight, same grey as the canvas draws. -->
+        <p class="withheld">
+          <svg class="ringmark" viewBox="0 0 16 16" aria-hidden="true"
+            ><circle cx="8" cy="8" r="6" fill="none" stroke="#5c6068" stroke-width="1.1" stroke-dasharray="3 3" /></svg
+          >{WITHHELD_LINE.text} <span class="floor">{FLOOR_NOTE.text}</span>
+        </p>
+      </div>
+      <div class="buniverse">
+        <p class="sf">{STANDFIRST[0].text} <span>{STANDFIRST[1].text}</span></p>
+        <p class="complement">{COMPLEMENT.text}</p>
+      </div>
 
       <!-- One slot, on its own row, holding the invitation at rest, the key to the selected
            view otherwise, and the chosen metro's own record beneath both — with the band's
@@ -237,42 +254,13 @@ const heroData = {
       </div>
     </div>
 
-    <!-- The key rides WITH the picture, under it, where a legend belongs. -->
-    <p class="keystrip">
-      <span data-scalenote="people">{SCALE_TOTAL.text}</span>
-      <span data-scalenote="rate" hidden>{SCALE_RATE.text}</span>
-      {HERO_LINES.map((l) => <span>{l.text}</span>)}
-      <span>{STREAM_NOTE.text}</span>
-    </p>
+    <!-- The key rides WITH the picture, under it, where a legend belongs — and it is now made
+         of the mark's own glyphs rather than a row of sentences. See Key.astro: the strip used
+         to be six paragraphs describing five shapes the picture already draws. -->
+    <Key />
   </section>
 
   <div class="wrap">
-    <!-- ── the legend for both marks, one block, small ── -->
-    <div class="legend">
-      <p class="reg">{REGISTER_FRAME.text}</p>
-      <p class="complement">{COMPLEMENT.text}</p>
-      {LEGEND.map((l) => <p>{l.text}</p>)}
-    </div>
-
-    <!-- ── the claim register: the withheld quarter, on its own scale ── -->
-    <section class="claimsec">
-      <p class="register">{REGISTER_CLAIM.text}</p>
-      <figure class="claimfig" style={`--cut:${(cut * 100).toFixed(3)}%`}>
-        <div class="claimwrap">
-          <div class="claimplate" set:html={claimSvg} />
-          <span class="cap-left">{BAR_DISCLOSED.text}</span>
-        </div>
-        <figcaption class="claimcap">
-          <span class="cap-right">
-            <b class="tnum">{BAR_WITHHELD.text}</b>
-            {BAR_WITHHELD_SUB.map((s) => <i>{s.text}</i>)}
-          </span>
-        </figcaption>
-      </figure>
-      <p class="withheld">{WITHHELD_LINE.text}</p>
-      <p class="floor">{FLOOR_NOTE.text}</p>
-    </section>
-
     <!-- ── the three remaining beats, as captions ── -->
     <div class="beats">
       {[BEAT_COUNTY, BEAT_RATES, BEAT_ABSENT].map((b) => (

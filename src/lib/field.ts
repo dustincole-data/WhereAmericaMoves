@@ -28,6 +28,19 @@
 //                 arrived and how much left, rather than which way the difference fell —
 //                 and they assert nothing the package withheld.
 //
+//                 IT ALSO CARRIES ITS OWN ABSENCE, as of 2026-08-10. A dashed outer ring
+//                 encloses the metro's `rest_in_suppressed + rest_out_suppressed` at the same
+//                 `per` as the body — the mass the publisher counted in this metro's totals
+//                 and attached to no county pair. That sum is a SPOKEN aggregate the contract
+//                 refuses as a figure and licenses as a mark: `contract.aggregation` —
+//                 "a mark may aggregate the cells it is made of" — which is the same licence
+//                 `MetroCopy.supExtent` and the per-thousand scale already run on. It replaces
+//                 the claim register bar, which said one national proportion once, in a
+//                 section of its own, below the mark. This says the metro's own, thirty times,
+//                 inside it. The two are DIFFERENT QUANTITIES and the page does not conflate
+//                 them: the national figure is printed in type beside the headline and cited
+//                 to C0003, and the ring is never printed at all.
+//
 //   on selection  a cluster is the PAIRWISE NET with the selected metro:
 //                 net(D) = flow(D→S) − flow(S→D). Both operands are published cells of
 //                 `top_metro_relations`. `contract.aggregation` licenses this as a mark and
@@ -79,6 +92,17 @@ export interface View {
       so this is zero everywhere else. Phyllotaxis index rises with radius, so the first
       `cut` dots ARE the core — no second pass and no sorting. */
   cut: number[];
+  /** THE WITHHELD MASS, IN THE SAME UNIT AS THE BODY. Dots the cluster's dashed outer ring
+      encloses beyond its own body: the metro's unattributable columns, counted at the resting
+      view's own `per`, so the annulus is the same people-per-unit-area as the dots inside it.
+      A reader compares the ring to the body without being told a scale, because there is only
+      one scale.
+
+      RESTING VIEW ONLY, and that is a contract line rather than a shortcut. A selection view's
+      clusters are pairwise nets on a per-view scale that has nothing to do with a metro's own
+      residual, so a ring drawn there would put two unrelated quantities in one picture at two
+      unrelated scales. Undefined on every other view. */
+  ring?: number[];
 }
 
 export interface FieldData {
@@ -237,7 +261,14 @@ function restView(): View {
   );
   const cut = CODES.map((c) => dotsFor(TOTALS_BY_CBSA.get(c)!.total_in, per));
   const n = CODES.map((c, i) => cut[i] + dotsFor(TOTALS_BY_CBSA.get(c)!.total_out, per));
-  return { n, pole: CODES.map(() => 3 as PoleCode), cut };
+  // The ring, at the same `per` as the body. `dotsFor` floors a nonzero value at one dot, so
+  // a metro whose residual rounds under a dot still gets a ring — which is the point: the
+  // residual is never zero anywhere, and a metro drawn with no ring at all would say it was.
+  const ring = CODES.map((c) => {
+    const t = TOTALS_BY_CBSA.get(c)!;
+    return dotsFor(t.rest_in_suppressed + t.rest_out_suppressed, per);
+  });
+  return { n, pole: CODES.map(() => 3 as PoleCode), cut, ring };
 }
 
 function selectionView(sel: string, rate: boolean): View {

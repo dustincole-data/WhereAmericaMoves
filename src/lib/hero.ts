@@ -49,6 +49,9 @@ interface ViewData {
   n: number[];
   pole: number[];
   cut: number[];
+  /** dots enclosed by the dashed outer ring, beyond the body. Resting view only — see
+      `field.ts`, which is the one place that decides what the ring is. */
+  ring?: number[];
 }
 
 interface Payload {
@@ -87,6 +90,20 @@ if (stage && canvas && over && payloadEl) {
 
   const RGB = BANDS.map((ramp) => ramp.map(hexToRgb));
   const INK = hexToRgb('#15181d');
+
+  /** THE OUTER RADIUS OF A CLUSTER, ring included. One function, because two things need the
+      same answer and they are 300 lines apart: `glyphs` draws the ring, and `placeLabels`
+      has to treat it as occupied or every name lands on top of one. Returns 0 when the view
+      has no ring, which is every view but the resting one.
+
+      `radiusFor(n)` gives a disc of area `n × dotArea`, so `radiusFor(n + ring)` gives a disc
+      whose ANNULUS beyond the body is exactly `ring × dotArea`. The ring's ink is therefore
+      the same people-per-unit-area as the dots it encloses, with no second scale to state. */
+  function ringR(v: ViewData, i: number, m: Mode): number {
+    const k = v.ring?.[i] ?? 0;
+    if (k <= 0 || v.n[i] <= 0) return 0;
+    return radiusFor(v.n[i] + k, m);
+  }
 
   // ── one view, resolved into geometry ─────────────────────────────────────────
 
@@ -370,6 +387,30 @@ if (stage && canvas && over && payloadEl) {
         ctx.fill();
         ctx.globalAlpha = 1;
         continue;
+      }
+
+      // THE WITHHELD MASS, ON THE CLUSTER THAT OWNS IT. What the claim register bar used to
+      // say once, below the mark, about the country: this metro's own unattributable columns,
+      // as an annulus at the body's own scale. Dashed, because dashed already means "the
+      // record discloses nothing here" everywhere else on this page — the empty partner ring
+      // uses the same 3/3 — so the absence reads without being keyed.
+      //
+      // Drawn BEFORE the datum below it and stroked from the ring's own radius, so it never
+      // reads as a halo on the dots: the gap between the outermost dot and the dash is the
+      // quantity.
+      if (pole === 3) {
+        const rr = ringR(v, i, m);
+        if (rr > c.r + 1.2) {
+          ctx.globalAlpha = alpha * 0.55;
+          ctx.strokeStyle = '#5c6068';
+          ctx.lineWidth = 0.9;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(c.x, c.y, rr, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1;
+        }
       }
 
       // The halfway datum. The cut travels only about 0.29 of the cluster's radius across
@@ -679,7 +720,12 @@ if (stage && canvas && over && payloadEl) {
             ? m.absentR
             : v.n[i] <= 0
               ? m.evenR
-              : Math.max(c.r, 3);
+              // The dashed ring is ink at rest, so the name has to clear the RING and not the
+              // body. Placing against `c.r` put a word inside the annulus on every cluster
+              // whose residual is a large share of it — St. Louis's ring is over half its
+              // body — which is the one place on this mark a label cannot go, because the gap
+              // it would sit in is the quantity.
+              : Math.max(ringR(v, i, m) || c.r, 3);
       return { x: c.x, y: c.y, r, i };
     });
     /** `radiusFor` is where the outermost dot's CENTRE lands, so the ink reaches `r + dotR`.

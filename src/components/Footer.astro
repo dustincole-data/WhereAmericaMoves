@@ -16,25 +16,39 @@ import { LIMITS_TITLE, LIMITS, METHOD, METHOD_LINK, STAMP } from '../copy';
 ---
 
 <footer class="limits" role="contentinfo">
-  <h2>{LIMITS_TITLE.text}</h2>
+  <!-- ONE control, and `<details>` on purpose rather than a scripted disclosure: it opens with
+       no JavaScript, Ctrl-F on a closed block scrolls it open in every current browser, and a
+       screen reader reads it as a named expandable region. Nothing here is hidden from the
+       dist scan either — every string is server-rendered inside, which is why `lint:copy`
+       still reads all of it and why collapsing costs the piece no disclosure. -->
+  <details class="limitbox">
+    <summary>
+      <h2>{LIMITS_TITLE.text}</h2>
+    </summary>
 
-  {
-    LIMITS.map((section) => (
-      <section class="limit">
-        <h3>{section.head.text}</h3>
-        {section.body.map((p) => (
-          <p>{p.text}</p>
-        ))}
+    <div class="limitbody">
+      {
+        LIMITS.map((section) => (
+          <section class="limit">
+            <h3>{section.head.text}</h3>
+            {section.body.map((p) => (
+              <p>{p.text}</p>
+            ))}
+          </section>
+        ))
+      }
+
+      <section class="method">
+        <h3 class="vh">Method</h3>
+        {METHOD.map((p) => <p>{p.text}</p>)}
+        <p>
+          <a href="https://www.irs.gov/statistics/soi-tax-stats-migration-data">{METHOD_LINK.text}</a>
+        </p>
       </section>
-    ))
-  }
+    </div>
+  </details>
 
-  <section class="method">
-    <h3 class="vh">Method</h3>
-    {METHOD.map((p) => <p>{p.text}</p>)}
-    <p>
-      <a href="https://www.irs.gov/statistics/soi-tax-stats-migration-data">{METHOD_LINK.text}</a>
-    </p>
-    <p class="stamp">{STAMP.text}</p>
-  </section>
+  <!-- The stamp stays OUTSIDE the control. It is one line, it is the page's signature, and a
+       package identity a reader has to open something to see is not on the page. -->
+  <p class="stamp">{STAMP.text}</p>
 </footer>

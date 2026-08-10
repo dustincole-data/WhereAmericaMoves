@@ -1,0 +1,108 @@
+---
+// THE KEY, IN THE MARK'S OWN HAND.
+//
+// What stood here was a paragraph: six sentences of 11.5px grey prose in a row under the
+// picture, ninety words describing five things the picture already draws. Dustin, 2026-08-10:
+// "something little that fits the vibe of the chart… not a bunch of big tables." A legend for
+// a mark made of dots should be made of dots.
+//
+// So every entry is a GLYPH DRAWN IN THE SAME VOCABULARY AS THE CANVAS — the same two ramps'
+// mid stops, the same 3/3 dash, the same constant-area dot — beside four to ten words. The
+// picture carries the shape and the words carry only what a shape cannot say. That is what let
+// the strip's text drop by half again: "A dashed empty ring is a direction the record discloses
+// nothing for: withheld or absent, never zero" became a dashed empty ring, drawn, plus
+// "Nothing disclosed here: withheld or absent, never zero." The sentence stopped describing
+// what the reader is looking at and started saying what it means.
+//
+// The glyphs are GEOMETRY, which `contract.apparatus` puts outside the contract, and the lint's
+// ⑥ backstop strips geometry attributes before reading a file for figures — so the coordinates
+// below assert nothing and trace to nothing. Every string is still a CopyRecord.
+//
+// Colours are the ramps' mid stops from `clusters.ts` rather than tokens: a legend swatch that
+// is not the ink it stands for is a lie about the ink. Orange above the datum and teal below
+// it, because that is the way round the resting cluster draws it.
+import {
+  SCALE_TOTAL,
+  SCALE_RATE,
+  HERO_LINES,
+  RING_NOTE,
+  STREAM_NOTE,
+  PHONE_NOTE,
+} from '../copy';
+
+const LOSS = '#c25324';
+const GAIN = '#0b8476';
+const MUTED = '#5c6068';
+
+/** A resting cluster in miniature: constant-area dots, cut by the horizontal datum, orange
+    above and teal below. Two rings and no centre dot — a dot ON the datum would have to pick a
+    side, and the whole point of the cut is that it is a line rather than a category. */
+const CLUSTER: [number, number, string][] = [
+  [12.8, 6.01, LOSS], [9.99, 3.2, LOSS], [6.01, 3.2, LOSS], [3.2, 6.01, LOSS],
+  [3.2, 9.99, GAIN], [6.01, 12.8, GAIN], [9.99, 12.8, GAIN], [12.8, 9.99, GAIN],
+  [9.77, 6.23, LOSS], [6.23, 6.23, LOSS], [6.23, 9.77, GAIN], [9.77, 9.77, GAIN],
+];
+
+/** The same body at half the radius, so the dashed ring around it has somewhere to be. */
+const CORE: [number, number][] = [
+  [8, 5.6], [10.1, 7.1], [9.3, 9.6], [6.7, 9.6], [5.9, 7.1],
+];
+---
+
+<ul class="keyglyphs">
+  <li data-scalenote="people">
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      {CLUSTER.map(([x, y, fill]) => <circle cx={x} cy={y} r="1.05" fill={fill} />)}
+      <line x1="1.4" y1="8" x2="14.6" y2="8" stroke="#15181d" stroke-width="0.5" stroke-dasharray="1.6 1.6" opacity="0.55" />
+    </svg>
+    <span>{SCALE_TOTAL.text}</span>
+  </li>
+
+  <li data-scalenote="rate" hidden>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      {CLUSTER.map(([x, y, fill]) => <circle cx={x} cy={y} r="1.05" fill={fill} />)}
+      <line x1="1.4" y1="8" x2="14.6" y2="8" stroke="#15181d" stroke-width="0.5" stroke-dasharray="1.6 1.6" opacity="0.55" />
+    </svg>
+    <span>{SCALE_RATE.text}</span>
+  </li>
+
+  <li>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="1.05" fill={GAIN} />
+    </svg>
+    <span>{HERO_LINES[0].text}</span>
+  </li>
+
+  <li>
+    <!-- The absence, at the size the mark draws it. `absentR` is a fixed glyph on the canvas
+         too, for the same reason: it is not a quantity. -->
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.4" fill="none" stroke={MUTED} stroke-width="1" stroke-dasharray="3 3" />
+    </svg>
+    <span>{HERO_LINES[1].text}</span>
+  </li>
+
+  <li>
+    <!-- The ring that replaced the claim register. The gap between the body and the dash is
+         the quantity, so the glyph has to show a body and a gap, not just a ring. -->
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      {CORE.map(([x, y]) => <circle cx={x} cy={y} r="1.05" fill={LOSS} />)}
+      <circle cx="8" cy="8" r="6.4" fill="none" stroke={MUTED} stroke-width="0.9" stroke-dasharray="3 3" opacity="0.85" />
+    </svg>
+    <span>{RING_NOTE.text}</span>
+  </li>
+
+  <li>
+    <!-- One stream, bowed the way `routeOf` bows it, thinning toward the end it leaves. -->
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M1.5 12.5 C5 12.6 8.5 6.4 14.5 4.4" fill="none" stroke={GAIN} stroke-width="2.4" stroke-linecap="round" opacity="0.42" />
+      <circle cx="4.6" cy="11.6" r="0.9" fill={GAIN} />
+      <circle cx="8.6" cy="8.4" r="0.9" fill={GAIN} />
+      <circle cx="12.4" cy="5.4" r="0.9" fill={GAIN} />
+    </svg>
+    <span>{STREAM_NOTE.text}</span>
+  </li>
+
+  <li class="noglyph"><span>{HERO_LINES[2].text}</span></li>
+  <li class="noglyph phoneonly"><span>{PHONE_NOTE.text}</span></li>
+</ul>
