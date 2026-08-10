@@ -215,23 +215,6 @@ const heroData = {
           ))}
         </g>
         <text id="sourcetag" class="srctag" text-anchor="middle" style="display:none">{SOURCE_TAG.text}</text>
-
-        <!-- The on-chart key: which colour means what, named to whichever metro is
-             selected. One of thirty, swapped by hero.ts's `select`, same mechanism as
-             the readouts below — no client-built copy. The rect is sized to the
-             text's own measured box in hero.ts: a halo alone was not enough
-             against whatever ends up under the corner. -->
-        <g class="keys" aria-hidden="true">
-          {placed.map((m) => (
-            <g data-metro-key={m.cbsa} hidden>
-              <rect class="keybg" />
-              <text class="keytext">
-                <tspan class="dot loss" x="0" dy="0">●</tspan><tspan> {m.keyLoss.text}</tspan>
-                <tspan class="dot gain" x="0" dy="1.5em">●</tspan><tspan> {m.keyGain.text}</tspan>
-              </text>
-            </g>
-          ))}
-        </g>
       </svg>
 
       <!-- The pair readout. Every block is here in dist and merely unhidden on hover, so the

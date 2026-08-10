@@ -21,6 +21,22 @@
 // Colours are the ramps' mid stops from `clusters.ts` rather than tokens: a legend swatch that
 // is not the ink it stands for is a lie about the ink. Orange above the datum and teal below
 // it, because that is the way round the resting cluster draws it.
+//
+// 2026-08-10, LATER — THE ON-CHART KEY MOVED IN HERE. Which colour means what used to be two
+// lines on a translucent plate in the map's own top-left corner, and the corner is not empty:
+// it is the Pacific Northwest. The plate sat on Seattle's cluster in every selection and on
+// Seattle's own name when Seattle was the metro chosen. Dustin: "move it outside of the map so
+// that it's not on top of anything." A key belongs in the key, so it is two more entries here
+// — hidden at rest, because at rest no cluster is one colour and there is nothing to name.
+//
+// The glyph is the thing the mark actually draws on selection: a partner's cluster is entirely
+// ONE colour there, orange where it lost people to the chosen metro and teal where it gained
+// them. So the entry is a small one-colour body, not the lone dot (that glyph is spoken for by
+// the too-small-to-fill note) and not the two-tone cluster (that is the resting cut).
+//
+// One entry per DIRECTION, not one per metro: the glyph is the same thirty times over and only
+// the name changes, so the thirty names ride inside the entry as spans and `hero.ts` unhides
+// one. Sixty spans rather than sixty inline SVGs, and the client still builds no copy.
 import {
   SCALE_TOTAL,
   SCALE_RATE,
@@ -28,11 +44,15 @@ import {
   RING_NOTE,
   STREAM_NOTE,
   PHONE_NOTE,
+  metroCopy,
 } from '../copy';
+import { METROS } from '../lib/metros';
 
 const LOSS = '#c25324';
 const GAIN = '#0b8476';
 const MUTED = '#5c6068';
+
+const named = METROS.map((m) => metroCopy(m.cbsa));
 
 /** A resting cluster in miniature: constant-area dots, cut by the horizontal datum, orange
     above and teal below. Two rings and no centre dot — a dot ON the datum would have to pick a
@@ -50,6 +70,20 @@ const CORE: [number, number][] = [
 ---
 
 <ul class="keyglyphs">
+  <li class="dirkey" hidden>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      {CORE.map(([x, y]) => <circle cx={x} cy={y} r="1.05" fill={LOSS} />)}
+    </svg>
+    <span>{named.map((m) => <span data-metro-key={m.cbsa} hidden>{m.keyLoss.text}</span>)}</span>
+  </li>
+
+  <li class="dirkey" hidden>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      {CORE.map(([x, y]) => <circle cx={x} cy={y} r="1.05" fill={GAIN} />)}
+    </svg>
+    <span>{named.map((m) => <span data-metro-key={m.cbsa} hidden>{m.keyGain.text}</span>)}</span>
+  </li>
+
   <li data-scalenote="people">
     <svg viewBox="0 0 16 16" aria-hidden="true">
       {CLUSTER.map(([x, y, fill]) => <circle cx={x} cy={y} r="1.05" fill={fill} />)}

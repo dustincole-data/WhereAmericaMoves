@@ -524,36 +524,12 @@
   font-weight: 600;
   fill: var(--ink-2);
 }
-/* The on-chart key. A swatch carries the colour; the words stay text-coloured, so
-   identity is never colour-alone. Hex values mirror clusters.ts's GAIN_RAMP[1] /
-   LOSS_RAMP[1] — CSS cannot import the TS module, so they are copied, not derived.
+/* `.keys`, `.keytext` and `.keybg` were deleted on 2026-08-10 with the plate they styled. The
+   on-chart key was two lines on a translucent rect in the box's top-left corner, and that
+   corner is the Pacific Northwest — it covered Seattle's cluster on every selection and
+   Seattle's own name when Seattle was chosen. The colour key is two entries in `.keyglyphs`
+   now, under the picture, on top of nothing. */
 
-   THE UA's `[hidden]{display:none}` DOES NOT REACH SVG. It is an HTML-namespace
-   rule; without this line all thirty key groups share one transform and render on
-   top of each other — caught only because a puppeteer pass looked at the rest
-   state, not the selected one, where it read as a garbled overlap of every city. */
-.over .keys g[hidden] {
-  display: none;
-}
-.over .keytext {
-  text-anchor: start;
-}
-.over .keytext .dot {
-  font-size: 0.8em;
-}
-.over .keytext .dot.loss {
-  fill: #a63a12;
-}
-.over .keytext .dot.gain {
-  fill: #00695c;
-}
-/* Sized to the text's own bbox in hero.ts, not authored: a halo alone was not
-   enough against a dense cluster underneath, and what ends up under the corner
-   varies with the box. */
-.over .keybg {
-  fill: var(--ground);
-  opacity: 0.86;
-}
 /* ── the leader ─────────────────────────────────────────────────────────────────
  *
  * Drawn only where the placement says a name is ambiguous — where its cluster overlaps

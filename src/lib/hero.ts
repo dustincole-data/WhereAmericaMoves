@@ -688,7 +688,11 @@ if (stage && canvas && over && payloadEl) {
 
   const labels = [...over!.querySelectorAll<SVGTextElement>('text[data-label]')];
   const hits = [...over!.querySelectorAll<SVGGElement>('g[data-metro]')];
-  const keys = [...over!.querySelectorAll<SVGGElement>('g[data-metro-key]')];
+  // The colour key lives in the key strip under the picture now, not in the map's corner, so
+  // these are HTML spans in `Key.astro` rather than groups inside the overlay. `dirRows` is the
+  // two entries themselves: at rest no cluster is one colour, so there is nothing to name.
+  const keys = [...document.querySelectorAll<HTMLElement>('[data-metro-key]')];
+  const dirRows = [...document.querySelectorAll<HTMLElement>('li.dirkey')];
   const leads = [...over!.querySelectorAll<SVGGElement>('g[data-leader]')];
   const meas = document.createElement('canvas').getContext('2d')!;
 
@@ -849,27 +853,9 @@ if (stage && canvas && over && payloadEl) {
       if (si >= 0) sourceTag.setAttribute('transform', `translate(${to[si].x.toFixed(1)},${(to[si].y + 4).toFixed(1)})`);
     }
 
-    // The key sits in the box's own corner, in the same user units as the names, so
-    // it renders at the same real pixel size at every viewport — same trick as
-    // `labelUnits` itself. The corner is over the Pacific on the wide box and over
-    // the first grid cell on the phone — the background is sized to the visible
-    // key's own measured box, not guessed, so it stays legible over whatever ends
-    // up underneath it.
-    const kx = m.pad;
-    const ky = m.top + fs * 1.1;
-    const keyPad = fs * 0.35;
-    keys.forEach((g) => {
-      g.setAttribute('transform', `translate(${kx.toFixed(1)},${ky.toFixed(1)})`);
-      if (g.hasAttribute('hidden')) return;
-      const text = g.querySelector('text')!;
-      const rect = g.querySelector('rect')!;
-      const b = text.getBBox();
-      rect.setAttribute('x', (b.x - keyPad).toFixed(1));
-      rect.setAttribute('y', (b.y - keyPad).toFixed(1));
-      rect.setAttribute('width', (b.width + keyPad * 2).toFixed(1));
-      rect.setAttribute('height', (b.height + keyPad * 2).toFixed(1));
-      rect.setAttribute('rx', (keyPad * 0.6).toFixed(1));
-    });
+    // The key used to be placed here, in the box's own corner. The corner is the Pacific
+    // Northwest, so the plate sat on Seattle in every selection; it is in the key strip under
+    // the picture now and needs no placement at all.
   }
 
   // ── selection ────────────────────────────────────────────────────────────────
@@ -879,9 +865,17 @@ if (stage && canvas && over && payloadEl) {
     panels.set(p.dataset.metroPanel!, p);
     p.hidden = p.dataset.metroPanel !== D.focus;
   });
-  keys.forEach((t) => {
-    t.toggleAttribute('hidden', t.dataset.metroKey !== D.focus);
-  });
+  /** The two direction entries in the key strip and the one name inside each, driven off the
+      same call so they can never disagree about which metro the colours are named to. */
+  function showKey(cbsa: string | null) {
+    keys.forEach((t) => {
+      t.toggleAttribute('hidden', t.dataset.metroKey !== cbsa);
+    });
+    dirRows.forEach((r) => {
+      r.toggleAttribute('hidden', cbsa === null);
+    });
+  }
+  showKey(D.focus);
 
   function select(cbsa: string | null) {
     const key = cbsa ?? 'rest';
@@ -892,9 +886,7 @@ if (stage && canvas && over && payloadEl) {
     panels.forEach((p, k) => {
       p.hidden = k !== cbsa;
     });
-    keys.forEach((t) => {
-      t.toggleAttribute('hidden', t.dataset.metroKey !== cbsa);
-    });
+    showKey(cbsa);
     if (atRest) atRest.hidden = cbsa !== null;
     if (onSel) onSel.hidden = cbsa === null;
     if (metricBox) metricBox.hidden = cbsa === null;
@@ -1123,9 +1115,7 @@ if (stage && canvas && over && payloadEl) {
     panels.forEach((p, k) => {
       p.hidden = k !== initial;
     });
-    keys.forEach((t) => {
-      t.toggleAttribute('hidden', t.dataset.metroKey !== initial);
-    });
+    showKey(initial);
     if (atRest) atRest.hidden = true;
     if (onSel) onSel.hidden = false;
     if (metricBox) metricBox.hidden = false;
