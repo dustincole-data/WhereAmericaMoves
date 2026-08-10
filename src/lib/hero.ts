@@ -705,24 +705,47 @@ if (stage && canvas && over && payloadEl) {
       // The box is measured on a CANVAS and the name is drawn as SVG, so it is deliberately
       // generous: `h` is the font size and the real glyph box runs ascender to descender,
       // about a quarter taller. Pittsburgh and Baltimore in the Orlando view overlapped by
-      // three pixels on the exact box and clear on this one.
+      // three pixels on the exact box. The margin on top of that is for the metric itself
+      // moving — a run that measured while the webfont was still swapping put San Antonio
+      // three pixels into Austin, once, and a placement that only just clears is a placement
+      // that will not clear on somebody else's machine.
       const at = (dx: number, dy: number, anchor: string, dist: number) => {
         const tx = d.x + dx * (d.r + dist);
         const ty = d.y + dy * (d.r + dist + h / 2);
         const x0 = anchor === 'start' ? tx : anchor === 'end' ? tx - w : tx - w / 2;
-        return { tx, ty, anchor, box: [x0 - 3, ty - h * 0.66, x0 + w + 3, ty + h * 0.66] as Box };
+        return { tx, ty, anchor, box: [x0 - 4, ty - h * 0.7, x0 + w + 4, ty + h * 0.7] as Box };
       };
+      // THREE TIERS, AND THE THIRD IS THE ONE THAT MATTERS. A name goes over nothing if it
+      // can; over the MARK if it cannot, where the halo keeps it readable; and over another
+      // name only if 128 candidates all failed — in which case it takes the one that
+      // overlaps least, measured, rather than a fixed slot.
+      //
+      // A fixed last resort is what this had, and it was a real defect hiding behind a
+      // margin: the moment the boxes grew, Riverside dropped through to "under my own
+      // cluster" and landed square on San Diego. A fallback that ignores everything already
+      // placed is not a fallback, it is a collision with extra steps.
       let hard: (ReturnType<typeof at> & { dist: number }) | null = null;
       let soft: (ReturnType<typeof at> & { dist: number }) | null = null;
+      let least: (ReturnType<typeof at> & { dist: number }) | null = null;
+      let leastArea = Infinity;
       for (const dist of RINGS) {
         for (const { dx, dy, anchor } of HEADINGS) {
           const c = at(dx, dy, anchor, dist);
           if (c.box[0] < 3 || c.box[2] > m.w - 3 || c.box[1] < 3 || c.box[3] > m.h - 3) continue;
-          if (taken.some((t) => overlaps(c.box, t))) continue;
+          let area = 0;
+          for (const t of taken) {
+            const ow = Math.min(c.box[2], t[2]) - Math.max(c.box[0], t[0]);
+            const oh = Math.min(c.box[3], t[3]) - Math.max(c.box[1], t[1]);
+            if (ow > 0 && oh > 0) area += ow * oh;
+          }
+          if (area > 0) {
+            if (area < leastArea) {
+              leastArea = area;
+              least = { ...c, dist };
+            }
+            continue;
+          }
           if (hitsDisc(c.box, d.i)) {
-            // Never over another NAME, and only over the mark as a last resort — the halo is
-            // what keeps that case readable. Dropping three names is not an answer to "you
-            // can't even read the metros", which is the objection this form exists to answer.
             soft ??= { ...c, dist };
             continue;
           }
@@ -731,7 +754,7 @@ if (stage && canvas && over && payloadEl) {
         }
         if (hard) break;
       }
-      const p = hard ?? soft ?? { ...at(0, 1, 'middle', RINGS[0]), dist: RINGS[0] };
+      const p = hard ?? soft ?? least ?? { ...at(0, 1, 'middle', RINGS[0]), dist: RINGS[0] };
       taken.push(p.box);
       const crowded = discs.some(
         (c) => c.i !== d.i && c.r > 0 && Math.hypot(c.x - d.x, c.y - d.y) < c.r + d.r
